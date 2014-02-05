@@ -32,7 +32,7 @@ void testParseOFFheader() {
 void testParseOFFvertex() {
     std::string line ("0 1 2");
     Vertex* result = parseOFFvertex(line);
-    if (result.x != 0.0 || result.y != 1.0 || result.z != 2.0) {
+    if (result->x != 0.0 || result->y != 1.0 || result->z != 2.0) {
         std::cout << "%TEST_FAILED% time=0 testname=testParseOFFvertex (offtest) message=error message sample" << std::endl;
     }
 }
