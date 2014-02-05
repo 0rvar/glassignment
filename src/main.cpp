@@ -1,4 +1,5 @@
 #include <GL/glut.h>
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -56,7 +57,7 @@ void onKeyDown(unsigned char key, int x, int y){
   }
 }
 
-void onSpecialKeyDown(int key, int x, int y) {
+void onSKeyDown(int key, int x, int y) {
   //GLUT_KEY_UP, GLUT_GET_DOWN etc
 }
 
@@ -76,14 +77,14 @@ int main(int argc, char *argv[]) {
 
   glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 
-  glutCreateWindow("FLOAT");
+  glutCreateWindow("Assignment 1");
 
   glutDisplayFunc(renderScene);
-  // glutIdleFunc(idle);
+  glutIdleFunc(idle);
 
   glutKeyboardFunc(onKeyDown);
-  //glutKeyboardUpFunc(keyboardup);
-  glutSpecialFunc(onSpecialKeyDown);
+  //glutKeyboardUpFunc(onKeyUp);
+  glutSpecialFunc(onSKeyDown);
 
   if (!init()) {
     return 1;
