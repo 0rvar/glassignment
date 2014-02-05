@@ -13,8 +13,8 @@ all: main
 .PHONY: test clean
 
 
-main: $(OBJECTS)
-	$(CXX) $(OBJECTS) src/main.cpp -o $@ $(LDFLAGS) $(LDLIBS)
+main: $(OBJECTS) build/main.o
+	$(CXX) $(OBJECTS) build/main.o -o $@ $(LDFLAGS) $(LDLIBS)
 
 build/%.o: src/%.cpp
 	$(CXX) $(CPPFLAGS) -c $< -o $@ 
