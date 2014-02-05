@@ -7,9 +7,11 @@ LDLIBS = -lGL -lGLU -lglut
 SOURCES = Transform.cpp Vertex.cpp off.cpp
 
 OBJECTS = $(patsubst %.cpp,build/%.o,$(SOURCES))
-TESTS = $(patsubst tests/%.cpp,build/tests/%,$(shell echo tests/*.cpp))
+TESTS = $(patsubst tests/%.cpp,build/tests/%.o,$(shell echo tests/*.cpp))
 
 all: main
+.PHONY: test clean
+
 
 main: $(OBJECTS)
 	$(CXX) $(OBJECTS) src/main.cpp -o $@ $(LDFLAGS) $(LDLIBS)
@@ -17,12 +19,16 @@ main: $(OBJECTS)
 build/%.o: src/%.cpp
 	$(CXX) $(CPPFLAGS) -c $< -o $@ 
 
-.PHONY: test
-test: $(TESTS)
-	$(foreach test,$(TESTS),$(test))
-
-build/tests/%: tests/%.cpp $(OBJECTS)
-	$(CXX) $(OBJECTS) $(CPPFLAGS) $< -o $@ $(LDFLAGS) $(LDLIBS)
 
 clean:
 	$(RM) build/*.o build/tests/*
+
+
+test: build/tests/runner
+	build/tests/runner
+
+build/tests/runner: $(TESTS)
+	$(CXX) $(OBJECTS) $(TESTS) -o $@ $(LDFLAGS) $(LDLIBS)
+
+build/tests/%.o: tests/%.cpp $(OBJECTS)
+	$(CXX) $(CPPFLAGS) -c $< -o $@
