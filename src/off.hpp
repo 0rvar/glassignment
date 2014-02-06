@@ -6,6 +6,7 @@
  */
 
 #include <string>
+#include <exception>
 #include <vector>
 #include "Vertex.hpp"
 
@@ -23,6 +24,19 @@ std::vector<Vertex*> parseOFF(std::string content);
 OFFHeader parseOFFheader(std::string line);
 Vertex* parseOFFvertex(std::string line);
 std::vector<int> parseOFFface(std::string line);
+
+
+class OFFParseException: public std::exception {
+  private:
+    std::string msg;
+
+  public:
+    OFFParseException();
+    OFFParseException(std::string message, int line);
+    virtual ~OFFParseException() throw();
+    virtual const char* what() const throw();
+    const int line;
+};
 
 #endif	/* OFF_HPP */
 

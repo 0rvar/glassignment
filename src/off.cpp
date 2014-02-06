@@ -25,10 +25,15 @@ std::vector<Vertex*> parseOFF(std::string content) {
   for(std::string each; std::getline(split, each, '\n'); lines.push_back(each));
   
   //Todo better error handling
-  assert(lines.size() >= 4);
-  assert(lines[0].compare(0, 3, "OFF") == 0);
+  if(lines.size() < 2 || lines[0].compare(0, 3, "OFF") != 0) {
+    throw OFFParseException(std::string("Missing OFF header"), 0);
+  }
   
   OFFHeader h = parseOFFheader(lines[1]);
+
+  if(lines.size() < 2 + h.numVertices + h.numFaces) {
+    throw OFFParseException(std::string("File ended unexpectedly"), lines.size());
+  }
 
   for(int i = 2; i < h.numVertices + 2; i++) {
     vertices.push_back(parseOFFvertex(lines[i]));
@@ -83,4 +88,16 @@ std::vector<int> parseOFFface(std::string line) {
     face.push_back(v);
   }
   return face;
+}
+
+OFFParseException::OFFParseException(): line(0) {
+  msg = std::string("Unknown parse error");
+}
+
+OFFParseException::OFFParseException(std::string m, int l) : msg(m), line(l) {}
+
+OFFParseException::~OFFParseException() throw(){}
+
+const char* OFFParseException::what() const throw (){
+  return this->msg.c_str();
 }
