@@ -8,18 +8,18 @@
 #include "vertex.hpp"
 #include "off.hpp"
 
-std::vector<Vertex*> readOFF(std::string fileName) {
+std::vector<Vertex> readOFF(std::string fileName) {
   std::ifstream ifs(fileName.c_str());
   std::string content( (std::istreambuf_iterator<char>(ifs) ),
                        (std::istreambuf_iterator<char>()) );
   return parseOFF(content);
 }
 
-std::vector<Vertex*> parseOFF(std::string content) {
+std::vector<Vertex> parseOFF(std::string content) {
   std::vector<std::string> lines; 
-  std::vector<Vertex*> vertices;
+  std::vector<Vertex> vertices;
   std::vector <std::vector<int> > faces;
-  std::vector<Vertex*> triangles;
+  std::vector<Vertex> triangles;
 
   std::istringstream split(content); 
   for(std::string each; std::getline(split, each, '\n'); lines.push_back(each));
@@ -31,7 +31,7 @@ std::vector<Vertex*> parseOFF(std::string content) {
   
   OFFHeader h = parseOFFheader(lines[1]);
 
-  if(lines.size() < 2 + h.numVertices + h.numFaces) {
+  if(lines.size() < uint(2 + h.numVertices + h.numFaces)) {
     throw OFFParseException(std::string("File ended unexpectedly"), lines.size());
   }
 
@@ -43,10 +43,10 @@ std::vector<Vertex*> parseOFF(std::string content) {
     faces.push_back(parseOFFface(lines[i]));
   }
   
-  // Lol
+  // wow, such expressiveness
   for(std::vector <std::vector<int> >::iterator it = faces.begin(); it != faces.end(); ++it) {
       std::vector<int> face = *it;
-      for(int i = 2; i < face.size(); i++) {
+      for(uint i = 2; i < face.size(); i++) {
         triangles.push_back(vertices[face[0]]);
         triangles.push_back(vertices[face[i-1]]);
         triangles.push_back(vertices[face[i]]);
@@ -70,11 +70,11 @@ OFFHeader parseOFFheader(std::string line) {
   return h;
 }
 
-Vertex* parseOFFvertex(std::string line) {
+Vertex parseOFFvertex(std::string line) {
   float x, y, z;
   std::istringstream tokens(line);
   tokens >> x >> y >> z;
-  return new Vertex(x, y, z);
+  return Vertex_(x, y, z);
 }
 
 std::vector<int> parseOFFface(std::string line) {

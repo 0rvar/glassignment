@@ -1,35 +1,28 @@
-#include <GL/glut.h>
+#include <GL/glew.h>
+#include <GL/freeglut.h>
 
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "vertex.hpp"
 #include "off.hpp"
+#include "shadertools.hpp"
 
 #include "timer.hpp"
 
 using namespace std;
 
-bool init() {
+#define BUFFER_OFFSET(i) ((char *)NULL + (i))
+uint     vertexCount;
 
-  return true;
-}
-
-vector<Vertex*> polygons;
 void renderScene() {
   Timer t = Timer("renderScene"); //DEBUG
+
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
   // glLoadMatrixf(mat44);
-
-  glBegin(GL_TRIANGLES);
-    for(vector<Vertex*>::iterator it = polygons.begin(); it != polygons.end(); ++it) {
-      Vertex* v = *it;
-      glVertex3f(v->x, v->y, v->z);
-    }
-  glEnd();
-
+  glDrawArrays(GL_TRIANGLES, 0, vertexCount);
   glutSwapBuffers();
 
   t.Report(); //DEBUG
@@ -39,9 +32,19 @@ void idle() {
   // Animation Code
 
   // Use this function to trigger a redisplay
-  //glutPostRedisplay();
+  glutPostRedisplay();
 }
 
+void loadVertices(vector<Vertex> vertices) {
+  Vertex buf[vertices.size()];
+  for(uint i = 0; i < vertices.size(); i++) {
+    buf[i] = vertices[i];
+  }
+  vertexCount = vertices.size();
+
+  /* Load it to the buffer data array */
+  glBufferData(GL_ARRAY_BUFFER, sizeof(buf), buf, GL_STATIC_DRAW );
+}
 
 void onKeyDown(unsigned char key, int x, int y){
   cout  << "Pressed key : " << (char)key 
@@ -60,47 +63,96 @@ void onKeyDown(unsigned char key, int x, int y){
   }
 }
 
-void onSKeyDown(int key, int x, int y) {
-  //GLUT_KEY_UP, GLUT_GET_DOWN etc
+void initGlut(int argc, char **argv) {
+  /* Initialize glut */
+  glutInit(&argc, argv);
+
+  /* Display Mode 
+      GLUT_DOUBLE together with glutSwapBuffers(); for double buffering */
+  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
+  /* Window Size */
+  glutInitWindowSize(300, 300);
+  glutInitContextProfile( GLUT_CORE_PROFILE );
+  /* GL Version 
+     Check with glxinfo | grep Open for supported version */
+  glutInitContextVersion(3, 1);    
+
+  /* Window label */
+  glutCreateWindow("Assignment 1");
+}
+
+
+void initGL(void) {
+  GLuint program;
+  GLuint buffer;
+  GLuint loc;
+  GLuint vao;
+
+  /* Setting up GL Extensions */
+  glewExperimental = GL_TRUE; 
+  glewInit();
+
+  /* Create and initialize a program object with shaders */
+  program = initProgram("vshader.glsl", "fshader.glsl");
+
+  /* installs the program object as part of current rendering state */
+  glUseProgram(program);
+
+  /* Creat a vertex array object */ 
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+  
+  /* Create buffer in the shared display list space and 
+     bind it as GL_ARRAY_BUFFER */
+  glGenBuffers( 1, &buffer);
+  glBindBuffer( GL_ARRAY_BUFFER, buffer);
+  
+  /* Initialize attribute vPosition in program */
+  loc = glGetAttribLocation( program, "vPosition");
+  glEnableVertexAttribArray(loc);
+  glVertexAttribPointer(loc, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)BUFFER_OFFSET(0));
+
+  /* Set graphics attributes */
+  glLineWidth(1.0);
+  glPointSize(1.0);
+  glClearColor(0.0, 0.0, 0.0, 0.0);
+}
+
+void reshape(int width, int height) {
+  int size = min(width, height);
+  int x_off = (width-size)/2;
+  int y_off = (height-size)/2;
+  glViewport(x_off, y_off, size, size);
 }
 
 int main(int argc, char *argv[]) {
-
   if(argc < 2) {
       cerr << "Invalid usage, please pass in OFF-file as first argument";
       return 1;
   }
   
-  Timer t = Timer("readOFF"); //DEBUG
+  Timer t = Timer("OpenGL initialization"); //DEBUG
 
-  polygons = readOFF(argv[1]);
+  /* Initialization */
+  initGlut(argc, argv);
+  initGL();
 
   t.Report(); //DEBUG
-  
-  t.Restart("glut initialization"); //DEBUG
 
-  glutInit(&argc, argv);
-  
-  glutInitWindowPosition(50, 50);
-  glutInitWindowSize(500, 500);
+  t.Restart("readOFF()"); //DEBUG
+  vector<Vertex> vertices = readOFF(argv[1]);
+  t.Report(); //DEBUG
 
-  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
-
-  glutCreateWindow("Assignment 1");
+  t.Restart("loadVertices"); //DEBUG
+  loadVertices(vertices);
+  t.Report(); //DEBUG
 
   glutDisplayFunc(renderScene);
   glutIdleFunc(idle);
+  glutKeyboardFunc(onKeyDown); //glutKeyboardUpFunc(onKeyUp);
+  glutReshapeFunc(reshape);
 
-  glutKeyboardFunc(onKeyDown);
-  //glutKeyboardUpFunc(onKeyUp);
-  glutSpecialFunc(onSKeyDown);
-
-  if (!init()) {
-    return 1;
-  }
-
-  t.Report(); //DEBUG
-
+  /* Loop for a short while */
   glutMainLoop();
 
   return 0;

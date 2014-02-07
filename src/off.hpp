@@ -19,10 +19,10 @@ typedef struct {
     int numEdges;
 } OFFHeader;
 
-std::vector<Vertex*> readOFF(std::string fileName);
-std::vector<Vertex*> parseOFF(std::string content);
+std::vector<Vertex> readOFF(std::string fileName);
+std::vector<Vertex> parseOFF(std::string content);
 OFFHeader parseOFFheader(std::string line);
-Vertex* parseOFFvertex(std::string line);
+Vertex parseOFFvertex(std::string line);
 std::vector<int> parseOFFface(std::string line);
 
 
