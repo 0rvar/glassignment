@@ -16,12 +16,18 @@ using namespace std;
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 uint     vertexCount;
+float matTrans[16] = {
+  1.0, 0, 0, 0,
+  0, 1.0, 0, 0,
+  0, 0, 1.0, 0,
+  0, 0, 0, 1.0
+};
 
 void renderScene() {
   Timer t = Timer("renderScene"); //DEBUG
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  // glLoadMatrixf(mat44);
+  
   glDrawArrays(GL_TRIANGLES, 0, vertexCount);
   glutSwapBuffers();
 
@@ -32,7 +38,7 @@ void idle() {
   // Animation Code
 
   // Use this function to trigger a redisplay
-  glutPostRedisplay();
+  //glutPostRedisplay();
 }
 
 void loadVertices(vector<Vertex> vertices) {
@@ -87,6 +93,7 @@ void initGL(void) {
   GLuint buffer;
   GLuint loc;
   GLuint vao;
+  GLuint idTransMat;
 
   /* Setting up GL Extensions */
   glewExperimental = GL_TRUE; 
@@ -111,6 +118,10 @@ void initGL(void) {
   loc = glGetAttribLocation( program, "vPosition");
   glEnableVertexAttribArray(loc);
   glVertexAttribPointer(loc, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)BUFFER_OFFSET(0));
+
+  idTransMat = glGetUniformLocation(program, "T");
+  glUniformMatrix4fv(idTransMat, 1, GL_FALSE,
+            matTrans);
 
   /* Set graphics attributes */
   glLineWidth(1.0);
