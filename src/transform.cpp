@@ -5,7 +5,7 @@
  * Created on 05 February 2014, 09:43
  */
 
-#include "Transform.hpp"
+#include "transform.hpp"
 
 Transform::Transform() {
   for(int i = 0; i < 16; i++) {

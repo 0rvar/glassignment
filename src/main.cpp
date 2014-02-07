@@ -4,8 +4,10 @@
 #include <string>
 #include <vector>
 
-#include "Vertex.hpp"
+#include "vertex.hpp"
 #include "off.hpp"
+
+#include "timer.hpp"
 
 using namespace std;
 
@@ -16,20 +18,21 @@ bool init() {
 
 vector<Vertex*> polygons;
 void renderScene() {
+  Timer t = Timer("renderScene"); //DEBUG
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   // glLoadMatrixf(mat44);
 
   glBegin(GL_TRIANGLES);
-    cout << "polygon count: " << polygons.size()<< endl;
     for(vector<Vertex*>::iterator it = polygons.begin(); it != polygons.end(); ++it) {
       Vertex* v = *it;
       glVertex3f(v->x, v->y, v->z);
-      cout << "Placing glVertex3f at: " << v->x << "," << v->y << "," << v->z << endl;
     }
   glEnd();
 
   glutSwapBuffers();
+
+  t.Report(); //DEBUG
 }
 
 void idle() {
@@ -68,8 +71,14 @@ int main(int argc, char *argv[]) {
       return 1;
   }
   
+  Timer t = Timer("readOFF"); //DEBUG
+
   polygons = readOFF(argv[1]);
-    
+
+  t.Report(); //DEBUG
+  
+  t.Restart("glut initialization"); //DEBUG
+
   glutInit(&argc, argv);
   
   glutInitWindowPosition(50, 50);
@@ -89,6 +98,8 @@ int main(int argc, char *argv[]) {
   if (!init()) {
     return 1;
   }
+
+  t.Report(); //DEBUG
 
   glutMainLoop();
 

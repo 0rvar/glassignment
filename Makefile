@@ -4,7 +4,7 @@ RM=rm -f
 CPPFLAGS = -g -Isrc/
 LDFLAGS = -g
 LDLIBS = -lGL -lGLU -lglut
-SOURCES = Transform.cpp Vertex.cpp off.cpp
+SOURCES = transform.cpp vertex.cpp off.cpp timer.cpp
 
 OBJECTS = $(patsubst %.cpp,build/%.o,$(SOURCES))
 TESTS = $(patsubst tests/%.cpp,build/tests/%.o,$(shell echo tests/*.cpp))

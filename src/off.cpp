@@ -5,7 +5,7 @@
 #include <iostream>
 #include <assert.h>
 
-#include "Vertex.hpp"
+#include "vertex.hpp"
 #include "off.hpp"
 
 std::vector<Vertex*> readOFF(std::string fileName) {

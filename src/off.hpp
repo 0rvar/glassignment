@@ -8,7 +8,7 @@
 #include <string>
 #include <exception>
 #include <vector>
-#include "Vertex.hpp"
+#include "vertex.hpp"
 
 #ifndef OFF_HPP
 #define	OFF_HPP
