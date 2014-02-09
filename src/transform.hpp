@@ -14,7 +14,9 @@ class Transform {
 public:
     Transform();
     Transform Translate(float x, float y, float z);
+    Transform Scale(float factor);
     Matrix GetMatrix();
+    Transform Transpose();
 private:
     Matrix matrix;
 };

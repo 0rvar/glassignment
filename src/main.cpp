@@ -9,19 +9,13 @@
 #include "vertex.hpp"
 #include "off.hpp"
 #include "shadertools.hpp"
+#include "transform.hpp"
 
 #include "timer.hpp"
 
-using namespace std;
-
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
-uint     vertexCount;
-float matTrans[16] = {
-  1.0, 0, 0, 0,
-  0, 1.0, 0, 0,
-  0, 0, 1.0, 0,
-  0, 0, 0, 1.0
-};
+uint      vertexCount;
+Transform transform;
 
 void renderScene() {
   Timer t = Timer("renderScene"); //DEBUG
@@ -41,7 +35,7 @@ void idle() {
   //glutPostRedisplay();
 }
 
-void loadVertices(vector<Vertex> vertices) {
+void loadVertices(std::vector<Vertex> vertices) {
   Vertex buf[vertices.size()];
   for(uint i = 0; i < vertices.size(); i++) {
     buf[i] = vertices[i];
@@ -53,19 +47,19 @@ void loadVertices(vector<Vertex> vertices) {
 }
 
 void onKeyDown(unsigned char key, int x, int y){
-  cout  << "Pressed key : " << (char)key 
+  std::cout  << "Pressed key : " << (char)key 
         << " (" << (int)key << ") "
         << " at position : ("
-        << x << "," << y << ")" << endl;
+        << x << "," << y << ")" << std::endl;
 
   int mod = glutGetModifiers();
   switch(mod) {
   case GLUT_ACTIVE_CTRL:
-    cout << "Ctrl Held" << endl; break;
+    std::cout << "Ctrl Held" << std::endl; break;
   case GLUT_ACTIVE_SHIFT:
-    cout << "Shift Held" << endl; break;
+    std::cout << "Shift Held" << std::endl; break;
   case GLUT_ACTIVE_ALT:
-    cout << "Alt Held" << endl; break;
+    std::cout << "Alt Held" << std::endl; break;
   }
 }
 
@@ -121,7 +115,7 @@ void initGL(void) {
 
   idTransMat = glGetUniformLocation(program, "T");
   glUniformMatrix4fv(idTransMat, 1, GL_FALSE,
-            matTrans);
+            (const float*)&transform);
 
   /* Set graphics attributes */
   glLineWidth(1.0);
@@ -130,28 +124,40 @@ void initGL(void) {
 }
 
 void reshape(int width, int height) {
-  int size = min(width, height);
+  int size = std::min(width, height);
   int x_off = (width-size)/2;
   int y_off = (height-size)/2;
   glViewport(x_off, y_off, size, size);
 }
 
 int main(int argc, char *argv[]) {
+  std::vector<Vertex> vertices;
   if(argc < 2) {
-      cerr << "Invalid usage, please pass in OFF-file as first argument";
+      std::cerr << "Invalid usage, please pass in OFF-file as first argument";
       return 1;
   }
+
+  transform = transform
+    .Translate(100, 0, 0)
+    .Scale(0.008)
+    .Transpose(); // the model-view matrix is transposed for some kinky reason
   
-  Timer t = Timer("OpenGL initialization"); //DEBUG
+  Timer t = Timer("readOFF()"); //DEBUG
+
+  try {
+    vertices = readOFF(argv[1]);
+  } catch(OFFParseException &e) {
+    std::cerr << "Invalid OFF-file: \"" << e.what() << "\" on line " << e.line << std::endl;
+    return 1;
+  }
+  
+  t.Report(); //DEBUG
+  t.Restart("OpenGL initialization"); //DEBUG
 
   /* Initialization */
   initGlut(argc, argv);
   initGL();
 
-  t.Report(); //DEBUG
-
-  t.Restart("readOFF()"); //DEBUG
-  vector<Vertex> vertices = readOFF(argv[1]);
   t.Report(); //DEBUG
 
   t.Restart("loadVertices"); //DEBUG
