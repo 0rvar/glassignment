@@ -5,17 +5,18 @@
  * Created on 05 February 2014, 09:43
  */
 
+#include "matrix.hpp"
+
 #ifndef TRANSFORM_HPP
 #define	TRANSFORM_HPP
 
 class Transform {
 public:
     Transform();
-    float* GetMatrix();
-    Transform* Translate(float x, float y, float z);
-    
+    Transform Translate(float x, float y, float z);
+    Matrix GetMatrix();
 private:
-    float mat[16];
+    Matrix matrix;
 };
 
 #endif	/* TRANSFORM_HPP */

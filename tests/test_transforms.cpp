@@ -4,7 +4,7 @@
 
 TEST_CASE( "New transform is identity matrix", "[transform]" ) {
   Transform t;
-  float *m = t.GetMatrix();
+  Matrix m = t.GetMatrix();
   REQUIRE( m[0]  == 1 );
   REQUIRE( m[1]  == 0 );
   REQUIRE( m[2]  == 0 );

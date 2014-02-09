@@ -3,7 +3,7 @@ RM=rm -f
 CPPFLAGS = -g -Isrc/ -ansi -std=c++11 -Wall
 LDFLAGS = -g
 LDLIBS = -lGL -lGLU -lglut -lGLEW
-SOURCES = transform.cpp vertex.cpp off.cpp timer.cpp shadertools.cpp
+SOURCES = transform.cpp matrix.cpp vertex.cpp off.cpp timer.cpp shadertools.cpp
 
 # Build object list from source list (build/&.o)
 OBJECTS = $(patsubst %.cpp,build/%.o,$(SOURCES))
