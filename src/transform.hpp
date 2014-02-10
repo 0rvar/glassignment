@@ -21,6 +21,7 @@ public:
   Matrix GetMatrix();
   Transform Transpose();
 private:
+  
   Matrix matrix;
 };
 

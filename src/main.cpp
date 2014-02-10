@@ -13,6 +13,16 @@
 
 #include "timer.hpp"
 
+void loadVertices(std::vector<Vertex>);
+void idle();
+void onKeyDown(unsigned char, int, int);
+void onSpecialDown(int, int, int);
+void renderScene();
+void loadVertices(std::vector<Vertex>);
+void initGlut(int, char**);
+void initGL();
+void reshape();
+
 #define   BUFFER_OFFSET(i) ((char *)NULL + (i))
 #define STATE_IDLE 0
 #define STATE_OPEN 1
@@ -21,19 +31,20 @@
 #define STATE_ROTATE 4
 #define SUBSTATE_TRANSLATE_X 0
 #define SUBSTATE_TRANSLATE_Y 1
-typedef struct {
+typedef struct S {
   bool shouldUpdate;
   float dx, dy, s, az;
   int current, sub;
+  S() : shouldUpdate(false),dx(0),dy(0),s(1),az(0),current(0),sub(0) {}
 } ControlState;
+
 
 GLuint    idTransMat;
 uint      vertexCount = 0;
 Transform transform;
+ControlState state;
 
-ControlState state = {0};
 
-void loadVertices(std::vector<Vertex>);
 void idle() {
   if(!state.shouldUpdate) {
     return;
@@ -54,7 +65,6 @@ void idle() {
     }
     state.current = STATE_IDLE;
   } else {
-    std::cout << "Updating transform" <<  std::endl;
     transform = Transform()
       .RotateZ(state.az)
       .Scale(state.s)
@@ -68,9 +78,6 @@ void idle() {
 }
 
 void onKeyDown(unsigned char key, int x, int y){
-  std::cout  << "Pressed key : " << (char)key 
-        << " (" << (int)key << ") " << std::endl;
-
   if(key == 'o') {
     state.current = STATE_OPEN;
   } else if(key == 't') {
@@ -119,6 +126,48 @@ void onKeyDown(unsigned char key, int x, int y){
   }
   
   std::cout.flush();
+  state.shouldUpdate = true;
+}
+
+void onSpecialDown(int key, int x, int y) {
+  int mod = glutGetModifiers();
+
+  if(mod & GLUT_ACTIVE_SHIFT) {
+    switch(key) {
+    case GLUT_KEY_UP:
+      state.s += 0.1;
+      break;
+    case GLUT_KEY_DOWN:
+      state.s -= 0.1;
+      break;
+    case GLUT_KEY_RIGHT:
+      state.az -= 3.141592/36;
+      break;
+    case GLUT_KEY_LEFT:
+      state.az += 3.141592/36;
+      break;
+    default:
+      return;
+    }
+  } else {
+    switch(key) {
+    case GLUT_KEY_UP:
+      state.dy += 0.1;
+      break;
+    case GLUT_KEY_DOWN:
+      state.dy -= 0.1;
+      break;
+    case GLUT_KEY_RIGHT:
+      state.dx += 0.1;
+      break;
+    case GLUT_KEY_LEFT:
+      state.dx -= 0.1;
+      break;
+    default:
+      return;
+    }
+  }
+
   state.shouldUpdate = true;
 }
 
@@ -220,9 +269,8 @@ int main(int argc, char *argv[]) {
   glutDisplayFunc(renderScene);
   glutIdleFunc(idle);
   glutKeyboardFunc(onKeyDown); //glutKeyboardUpFunc(onKeyUp);
+  glutSpecialFunc(onSpecialDown);
   glutReshapeFunc(reshape);
-
-  state.s = 1;
 
   if(argc > 1) {
     try {
