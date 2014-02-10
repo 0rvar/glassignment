@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "transform.hpp"
 #include "matrix.hpp"
 
@@ -29,6 +31,41 @@ Transform Transform::Scale(float factor) {
 
   return r;
 }
+
+Transform Transform::RotateZ(float alpha) {
+  Transform r;
+  r.matrix[0] = cos(alpha);
+  r.matrix[1] = -sin(alpha);
+  r.matrix[4] = sin(alpha);
+  r.matrix[5] = cos(alpha);
+  r.matrix = r.matrix * matrix;
+
+  return r;
+}
+
+Transform Transform::RotateY(float alpha) {
+  Transform r;
+  r.matrix[0]  = cos(alpha);
+  r.matrix[3]  = -sin(alpha);
+  r.matrix[8]  = sin(alpha);
+  r.matrix[10] = cos(alpha);
+  r.matrix = r.matrix * matrix;
+
+  return r;
+}
+
+Transform Transform::RotateX(float alpha) {
+  Transform r;
+  r.matrix[5]  = cos(alpha);
+  r.matrix[6]  = -sin(alpha);
+  r.matrix[9]  = sin(alpha);
+  r.matrix[10] = cos(alpha);
+  r.matrix = r.matrix * matrix;
+
+  return r;
+}
+
+
 
 Matrix Transform::GetMatrix() {
   return matrix;

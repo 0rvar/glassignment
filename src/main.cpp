@@ -13,26 +13,126 @@
 
 #include "timer.hpp"
 
-#define BUFFER_OFFSET(i) ((char *)NULL + (i))
-uint      vertexCount;
+#define   BUFFER_OFFSET(i) ((char *)NULL + (i))
+#define STATE_IDLE 0
+#define STATE_OPEN 1
+#define STATE_TRANSLATE 2
+#define STATE_SCALE 3
+#define STATE_ROTATE 4
+#define SUBSTATE_TRANSLATE_X 0
+#define SUBSTATE_TRANSLATE_Y 1
+typedef struct {
+  bool shouldUpdate;
+  float dx, dy, s, az;
+  int current, sub;
+} ControlState;
+
+GLuint    idTransMat;
+uint      vertexCount = 0;
 Transform transform;
 
-void renderScene() {
-  Timer t = Timer("renderScene"); //DEBUG
+ControlState state = {0};
 
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+void loadVertices(std::vector<Vertex>);
+void idle() {
+  if(!state.shouldUpdate) {
+    return;
+  }
+
+  if(state.current == STATE_OPEN) {
+    std::string filename;
+    std::vector<Vertex> vertices;
+
+    std::cout << "Enter filename: ";
+    std::cin >> filename;
+
+    try {
+      vertices = readOFF(filename.c_str());
+      loadVertices(vertices);
+    } catch(OFFParseException &e) {
+      std::cerr << "Invalid OFF-file: \"" << e.what() << "\" on line " << e.line << std::endl;
+    }
+    state.current = STATE_IDLE;
+  } else {
+    std::cout << "Updating transform" <<  std::endl;
+    transform = Transform()
+      .RotateZ(state.az)
+      .Scale(state.s)
+      .Translate(state.dx, state.dy, 0)
+      .Transpose();
+  }
+
+  state.shouldUpdate = false;
+
+  glutPostRedisplay();
+}
+
+void onKeyDown(unsigned char key, int x, int y){
+  std::cout  << "Pressed key : " << (char)key 
+        << " (" << (int)key << ") " << std::endl;
+
+  if(key == 'o') {
+    state.current = STATE_OPEN;
+  } else if(key == 't') {
+    state.current = STATE_TRANSLATE;
+    state.sub = SUBSTATE_TRANSLATE_X;
+    std::cout << "Entering translate mode for X" << std::endl;
+  } else if(key == 's') {
+    state.current = STATE_SCALE;
+    std::cout << "Entering scale mode" << std::endl;
+  } else if(key == 'r') {
+    state.current = STATE_ROTATE;
+    std::cout << "Entering rotate mode around Z" << std::endl;
+  } else if(key == 'x' || key == 'y') {
+    if(state.current == STATE_TRANSLATE) {
+      if(key == 'x') {
+        state.sub = SUBSTATE_TRANSLATE_X;
+        std::cout << "Entering translate mode for X" << std::endl;
+      } else if(key == 'y') {
+        state.sub = SUBSTATE_TRANSLATE_Y;
+        std::cout << "Entering translate mode for Y" << std::endl;
+      }
+    }
+  } else if(key == '+' || key == '-') {
+    float sign = -1.0; float diff;
+    if(key == '+') { sign = 1.0; }
+
+    switch(state.current) {
+    case STATE_TRANSLATE:
+      diff = 0.1 * sign;
+      if(state.sub == SUBSTATE_TRANSLATE_X) {
+        state.dx += diff;
+      } else {
+        state.dy += diff;
+      }
+      break;  
+    case STATE_SCALE:
+      diff = 0.1 * sign;
+      state.s += diff;
+      break;
+    case STATE_ROTATE:
+      diff = 3.141592/36 * sign;
+      state.az += diff;
+    }
+  } else {
+    return;
+  }
   
+  std::cout.flush();
+  state.shouldUpdate = true;
+}
+
+void renderScene() {
+  glUniformMatrix4fv(idTransMat, 1, GL_FALSE,
+            (const float*)&transform);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glDrawArrays(GL_TRIANGLES, 0, vertexCount);
   glutSwapBuffers();
 
-  t.Report(); //DEBUG
-}
-
-void idle() {
-  // Animation Code
-
-  // Use this function to trigger a redisplay
-  //glutPostRedisplay();
+  std::cout << "dx: " << state.dx << ", " \
+            << "dy: " << state.dy << ", " \
+            << "s: "  << state.s  << ", " \
+            << "az: " << state.az << std::endl;
 }
 
 void loadVertices(std::vector<Vertex> vertices) {
@@ -44,23 +144,6 @@ void loadVertices(std::vector<Vertex> vertices) {
 
   /* Load it to the buffer data array */
   glBufferData(GL_ARRAY_BUFFER, sizeof(buf), buf, GL_STATIC_DRAW );
-}
-
-void onKeyDown(unsigned char key, int x, int y){
-  std::cout  << "Pressed key : " << (char)key 
-        << " (" << (int)key << ") "
-        << " at position : ("
-        << x << "," << y << ")" << std::endl;
-
-  int mod = glutGetModifiers();
-  switch(mod) {
-  case GLUT_ACTIVE_CTRL:
-    std::cout << "Ctrl Held" << std::endl; break;
-  case GLUT_ACTIVE_SHIFT:
-    std::cout << "Shift Held" << std::endl; break;
-  case GLUT_ACTIVE_ALT:
-    std::cout << "Alt Held" << std::endl; break;
-  }
 }
 
 void initGlut(int argc, char **argv) {
@@ -87,7 +170,6 @@ void initGL(void) {
   GLuint buffer;
   GLuint loc;
   GLuint vao;
-  GLuint idTransMat;
 
   /* Setting up GL Extensions */
   glewExperimental = GL_TRUE; 
@@ -131,43 +213,25 @@ void reshape(int width, int height) {
 }
 
 int main(int argc, char *argv[]) {
-  std::vector<Vertex> vertices;
-  if(argc < 2) {
-      std::cerr << "Invalid usage, please pass in OFF-file as first argument";
-      return 1;
-  }
-
-  transform = transform
-    .Translate(100, 0, 0)
-    .Scale(0.008)
-    .Transpose(); // the model-view matrix is transposed for some kinky reason
-  
-  Timer t = Timer("readOFF()"); //DEBUG
-
-  try {
-    vertices = readOFF(argv[1]);
-  } catch(OFFParseException &e) {
-    std::cerr << "Invalid OFF-file: \"" << e.what() << "\" on line " << e.line << std::endl;
-    return 1;
-  }
-  
-  t.Report(); //DEBUG
-  t.Restart("OpenGL initialization"); //DEBUG
-
   /* Initialization */
   initGlut(argc, argv);
   initGL();
-
-  t.Report(); //DEBUG
-
-  t.Restart("loadVertices"); //DEBUG
-  loadVertices(vertices);
-  t.Report(); //DEBUG
 
   glutDisplayFunc(renderScene);
   glutIdleFunc(idle);
   glutKeyboardFunc(onKeyDown); //glutKeyboardUpFunc(onKeyUp);
   glutReshapeFunc(reshape);
+
+  state.s = 1;
+
+  if(argc > 1) {
+    try {
+      std::vector<Vertex> vertices = readOFF(argv[1]);
+      loadVertices(vertices);
+    } catch(OFFParseException &e) {
+      std::cerr << "Invalid OFF-file: \"" << e.what() << "\" on line " << e.line << std::endl;
+    }
+  }
 
   /* Loop for a short while */
   glutMainLoop();

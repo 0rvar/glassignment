@@ -12,13 +12,16 @@
 
 class Transform {
 public:
-    Transform();
-    Transform Translate(float x, float y, float z);
-    Transform Scale(float factor);
-    Matrix GetMatrix();
-    Transform Transpose();
+  Transform();
+  Transform Translate(float x, float y, float z);
+  Transform Scale(float factor);
+  Transform RotateZ(float alpha);
+  Transform RotateY(float alpha);
+  Transform RotateX(float alpha);
+  Matrix GetMatrix();
+  Transform Transpose();
 private:
-    Matrix matrix;
+  Matrix matrix;
 };
 
 #endif	/* TRANSFORM_HPP */
