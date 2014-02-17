@@ -17,6 +17,13 @@ public:
   vec4(float _x, float _y, float _z, float _w): x(_x), y(_y), z(_z), w(_w) {};
   vec4(float _x, float _y, float _z): x(_x), y(_y), z(_z), w(1) {};
 };
+class point4 {
+public:
+  float x, y, z, w;
+  point4(): x(0),y(0),z(0),w(0) {};
+  point4(float _x, float _y, float _z, float _w): x(_x), y(_y), z(_z), w(_w) {};
+  point4(float _x, float _y, float _z): x(_x), y(_y), z(_z), w(0) {};
+};
 
 class mat4 {
 public:
@@ -26,6 +33,14 @@ public:
 
     mat4 operator+(const mat4& other);
     mat4 operator*(const mat4& other);
+    mat4 Transpose();
+
+    static mat4 Transform();
+    mat4 Translate(float x, float y, float z);
+    mat4 Scale(float factor);
+    mat4 RotateZ(float alpha);
+    mat4 RotateY(float alpha);
+    mat4 RotateX(float alpha);
 private:
     float mat[16] = {0};
 };

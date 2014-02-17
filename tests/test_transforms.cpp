@@ -1,10 +1,9 @@
 #include "catch.hpp"
 
-#include "transform.hpp"
+#include "geometry.hpp"
 
 TEST_CASE( "New transform is identity matrix", "[transform]" ) {
-  Transform t;
-  mat4 m = t.GetMatrix();
+  mat4 m = mat4::Transform();
   REQUIRE( m[0]  == 1 );
   REQUIRE( m[1]  == 0 );
   REQUIRE( m[2]  == 0 );
@@ -24,8 +23,7 @@ TEST_CASE( "New transform is identity matrix", "[transform]" ) {
 }
 
 TEST_CASE( "Translate", "[transform]" ) {
-  Transform t;
-  mat4 m = t.Translate(1, 2, 3).GetMatrix();
+  mat4 m = mat4::Transform().Translate(1, 2, 3);
   CHECK( m[0]  == 1 );
   CHECK( m[1]  == 0 );
   CHECK( m[2]  == 0 );
@@ -45,11 +43,9 @@ TEST_CASE( "Translate", "[transform]" ) {
 }
 
 TEST_CASE( "Scale", "[transform]" ) {
-  Transform t;
-  mat4 m;
   float factor = 0.5;
 
-  m = t.Scale(factor).GetMatrix();
+  mat4 m = mat4::Transform().Scale(factor);
   CHECK( m[0]  == factor );
   CHECK( m[1]  == 0 );
   CHECK( m[2]  == 0 );

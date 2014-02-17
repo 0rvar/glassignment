@@ -10,7 +10,6 @@
 #include "geometry.hpp"
 #include "off.hpp"
 #include "shadertools.hpp"
-#include "transform.hpp"
 
 #include "timer.hpp"
 
@@ -47,12 +46,12 @@ typedef struct S {
 
 GLuint    idTransMat;
 uint      vertexCount = 0;
-Transform transform;
+mat4      transform = mat4::Transform();
 ControlState state;
 
 
 void idle() {
-  guiMainIteration();
+  //guiMainIteration();
   if(!state.shouldUpdate) {
     return;
   }
@@ -72,7 +71,8 @@ void idle() {
     }
     state.current = STATE_IDLE;
   } else {
-    transform = Transform()
+    std::cout << "Updating transform" << std::endl;
+    transform = mat4::Transform()
       .RotateZ(state.az)
       .Scale(state.s)
       .Translate(state.dx, state.dy, 0)
@@ -289,11 +289,11 @@ int main(int argc, char *argv[]) {
   }
 
   /* Initialize GUI */
-  guiInit(&argc, argv);
-  initGuiWindow("ass2gui.glade");
+  //guiInit(&argc, argv);
+  //initGuiWindow("ass2gui.glade");
 
   /* Set up exit function */
-  atexit(&gui_atclose);
+  //atexit(&gui_atclose);
 
   /* Loop for a short while */
   glutMainLoop();
