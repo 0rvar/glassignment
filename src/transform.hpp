@@ -5,7 +5,7 @@
  * Created on 05 February 2014, 09:43
  */
 
-#include "matrix.hpp"
+#include "geometry.hpp"
 
 #ifndef TRANSFORM_HPP
 #define	TRANSFORM_HPP
@@ -18,11 +18,11 @@ public:
   Transform RotateZ(float alpha);
   Transform RotateY(float alpha);
   Transform RotateX(float alpha);
-  Matrix GetMatrix();
+  mat4 GetMatrix();
   Transform Transpose();
 private:
   
-  Matrix matrix;
+  mat4 matrix;
 };
 
 #endif	/* TRANSFORM_HPP */

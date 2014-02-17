@@ -7,19 +7,19 @@
 #include <algorithm>
 #include <gtk/gtk.h>
 
-#include "vertex.hpp"
+#include "geometry.hpp"
 #include "off.hpp"
 #include "shadertools.hpp"
 #include "transform.hpp"
 
 #include "timer.hpp"
 
-void loadVertices(std::vector<Vertex>);
+void loadVertices(std::vector<vec3>);
 void idle();
 void onKeyDown(unsigned char, int, int);
 void onSpecialDown(int, int, int);
 void renderScene();
-void loadVertices(std::vector<Vertex>);
+void loadVertices(std::vector<vec3>);
 void initGlut(int, char**);
 void initGL();
 void reshape();
@@ -59,7 +59,7 @@ void idle() {
 
   if(state.current == STATE_OPEN) {
     std::string filename;
-    std::vector<Vertex> vertices;
+    std::vector<vec3> vertices;
 
     std::cout << "Enter filename: ";
     std::cin >> filename;
@@ -191,8 +191,8 @@ void renderScene() {
             << "az: " << state.az << std::endl;
 }
 
-void loadVertices(std::vector<Vertex> vertices) {
-  Vertex buf[vertices.size()];
+void loadVertices(std::vector<vec3> vertices) {
+  vec3 buf[vertices.size()];
   for(uint i = 0; i < vertices.size(); i++) {
     buf[i] = vertices[i];
   }
@@ -281,7 +281,7 @@ int main(int argc, char *argv[]) {
 
   if(argc > 1) {
     try {
-      std::vector<Vertex> vertices = readOFF(argv[1]);
+      std::vector<vec3> vertices = readOFF(argv[1]);
       loadVertices(vertices);
     } catch(OFFParseException &e) {
       std::cerr << "Invalid OFF-file: \"" << e.what() << "\" on line " << e.line << std::endl;

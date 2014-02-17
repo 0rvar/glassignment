@@ -5,21 +5,21 @@
 #include <iostream>
 #include <assert.h>
 
-#include "vertex.hpp"
+#include "geometry.hpp"
 #include "off.hpp"
 
-std::vector<Vertex> readOFF(std::string fileName) {
+std::vector<vec3> readOFF(std::string fileName) {
   std::ifstream ifs(fileName.c_str());
   std::string content( (std::istreambuf_iterator<char>(ifs) ),
                        (std::istreambuf_iterator<char>()) );
   return parseOFF(content);
 }
 
-std::vector<Vertex> parseOFF(std::string content) {
+std::vector<vec3> parseOFF(std::string content) {
   std::vector<std::string> lines; 
-  std::vector<Vertex> vertices;
+  std::vector<vec3> vertices;
   std::vector <std::vector<int> > faces;
-  std::vector<Vertex> triangles;
+  std::vector<vec3> triangles;
 
   std::istringstream split(content); 
   for(std::string each; std::getline(split, each, '\n'); lines.push_back(each));
@@ -70,11 +70,11 @@ OFFHeader parseOFFheader(std::string line) {
   return h;
 }
 
-Vertex parseOFFvertex(std::string line) {
+vec3 parseOFFvertex(std::string line) {
   float x, y, z;
   std::istringstream tokens(line);
   tokens >> x >> y >> z;
-  return Vertex_(x, y, z);
+  return vec3(x, y, z);
 }
 
 std::vector<int> parseOFFface(std::string line) {

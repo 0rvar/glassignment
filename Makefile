@@ -1,4 +1,4 @@
-SOURCES = transform.cpp matrix.cpp vertex.cpp off.cpp timer.cpp shadertools.cpp gui.cpp
+SOURCES = transform.cpp geometry.cpp off.cpp timer.cpp shadertools.cpp gui.cpp
 
 CXX=g++
 RM=rm -f

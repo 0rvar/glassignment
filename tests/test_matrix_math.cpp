@@ -1,16 +1,16 @@
 #include <random>
 
-#include "matrix.hpp"
+#include "geometry.hpp"
 #include "catch.hpp"
 
-TEST_CASE( "Unit matrix timer unit matrix is unit matrix", "[matrix]" ) {
-  Matrix m;
+TEST_CASE( "Unit matrix timer unit matrix is unit matrix", "[mat4]" ) {
+  mat4 m;
   m[0] = 1;
   m[5] = 1;
   m[10] = 1;
   m[15] = 1;
 
-  Matrix res = m*m;
+  mat4 res = m*m;
   CHECK( res[0]  == 1 );
   CHECK( res[1]  == 0 );
   CHECK( res[2]  == 0 );
@@ -29,8 +29,8 @@ TEST_CASE( "Unit matrix timer unit matrix is unit matrix", "[matrix]" ) {
   CHECK( res[15] == 1 );
 }
 
-TEST_CASE( "{1} * {1} = {4}", "[matrix]" ) {
-  Matrix m1, m2, res;
+TEST_CASE( "{1} * {1} = {4}", "[mat4]" ) {
+  mat4 m1, m2, res;
   for(int i = 0; i < 16; i++) {
     m1[i] = m2[i] = 1;
   }
@@ -53,8 +53,8 @@ TEST_CASE( "{1} * {1} = {4}", "[matrix]" ) {
   CHECK( res[15] == 4 );
 }
 
-TEST_CASE( "{random} * I = _", "[matrix]" ) {
-  Matrix I, R, res;
+TEST_CASE( "{random} * I = _", "[mat4]" ) {
+  mat4 I, R, res;
   I[0] = I[5] = I[10] = I[15] = 1;
 
   std::random_device rd;

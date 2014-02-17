@@ -8,7 +8,7 @@
 #include <string>
 #include <exception>
 #include <vector>
-#include "vertex.hpp"
+#include "geometry.hpp"
 
 #ifndef OFF_HPP
 #define	OFF_HPP
@@ -19,10 +19,10 @@ typedef struct {
     int numEdges;
 } OFFHeader;
 
-std::vector<Vertex> readOFF(std::string fileName);
-std::vector<Vertex> parseOFF(std::string content);
+std::vector<vec3> readOFF(std::string fileName);
+std::vector<vec3> parseOFF(std::string content);
 OFFHeader parseOFFheader(std::string line);
-Vertex parseOFFvertex(std::string line);
+vec3 parseOFFvertex(std::string line);
 std::vector<int> parseOFFface(std::string line);
 
 

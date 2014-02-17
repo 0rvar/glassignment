@@ -1,7 +1,7 @@
 #include <cmath>
 
 #include "transform.hpp"
-#include "matrix.hpp"
+#include "geometry.hpp"
 
 Transform::Transform() {
   for(int i = 0; i < 16; i++) {
@@ -67,7 +67,7 @@ Transform Transform::RotateX(float alpha) {
 
 
 
-Matrix Transform::GetMatrix() {
+mat4 Transform::GetMatrix() {
   return matrix;
 }
 

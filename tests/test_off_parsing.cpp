@@ -38,7 +38,7 @@ TEST_CASE( "OFF header line is parsed", "[off]" ) {
 
 TEST_CASE( "OFF vertex lines are parsed", "[off]" ) {
   std::string line ("6 7 8");
-  Vertex result = parseOFFvertex(line);
+  vec3 result = parseOFFvertex(line);
 
   CHECK( result.x == 6.0 );
   CHECK( result.y == 7.0 );
@@ -47,7 +47,7 @@ TEST_CASE( "OFF vertex lines are parsed", "[off]" ) {
 
 TEST_CASE( "OFF is parsed", "[off]" ) {
   std::string content ("OFF\n8 6 24\n0 0 0\n0 0 1\n0 1 0\n0 1 1\n1 0 0\n1 0 1\n1 1 0\n1 1 1\n4 0 1 3 2\n4 2 3 7 6\n4 4 6 7 5\n4 0 4 5 1\n4 1 5 7 3\n4 0 2 6 4");
-  std::vector<Vertex> result = parseOFF(content);
+  std::vector<vec3> result = parseOFF(content);
 
   REQUIRE( result.size() == 12*3 );
 }
