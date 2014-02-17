@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <gtk/gtk.h>
 
 #include "vertex.hpp"
 #include "off.hpp"
@@ -22,6 +23,11 @@ void loadVertices(std::vector<Vertex>);
 void initGlut(int, char**);
 void initGL();
 void reshape();
+
+void initGuiWindow(const char*);
+void guiInit(int *, char**);
+void guiMainIteration(void);
+void gui_atclose();
 
 #define   BUFFER_OFFSET(i) ((char *)NULL + (i))
 #define STATE_IDLE 0
@@ -46,6 +52,7 @@ ControlState state;
 
 
 void idle() {
+  guiMainIteration();
   if(!state.shouldUpdate) {
     return;
   }
@@ -281,8 +288,124 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  /* Initialize GUI */
+  guiInit(&argc, argv);
+  initGuiWindow("ass2gui.glade");
+
+  /* Set up exit function */
+  atexit(&gui_atclose);
+
   /* Loop for a short while */
   glutMainLoop();
 
   return 0;
+}
+
+void gui_atclose() {
+  std::cout << "Wut";
+}
+
+/*  Called when a file is chosen.
+ *  inputs:  
+ *    btn: pointer to the button widget.
+ *    user_data: unknown or null.
+ */
+extern "C" void on_file_chooser_file_set(GtkFileChooser *filechooser, gpointer user_data) {
+  gchar* filename = gtk_file_chooser_get_filename(filechooser);
+  std::cout << "File chosen: " << filename << std::endl;
+}
+
+/*  Called when window closes.
+ *  inputs:  
+ *    btn: pointer to the button widget.
+ *    user_data: unknown or null.
+ */
+extern "C" void on_window_hide(GtkWidget *widget, gpointer user_data) {
+  std::cout << "Exits" << std::endl;
+  exit(0);
+}
+
+/*  Called when left-button is clicked.
+ *  inputs:  
+ *    btn: pointer to the button widget.
+ *    user_data: unknown or null.
+ */
+extern "C" void on_btn_left_clicked(GtkButton *btn, gpointer user_data) {
+  std::cout << "Left" << std::endl;
+}
+
+/*  Called when right-button is clicked.
+ *  inputs:  
+ *    btn: pointer to the button widget.
+ *    user_data: unknown or null.
+ */
+extern "C" void on_btn_right_clicked(GtkButton *btn, gpointer user_data) {
+  std::cout << "Right" << std::endl;
+}
+
+/*  Called when up-button is clicked.
+ *  inputs:  
+ *    btn: pointer to the button widget.
+ *    user_data: unknown or null.
+ */
+extern "C" void on_btn_up_clicked(GtkButton *btn, gpointer user_data) {
+  std::cout << "Up" << std::endl;
+}
+
+/*  Called when down-button is clicked.
+ *  inputs:  
+ *    btn: pointer to the button widget.
+ *    user_data: unknown or null.
+ */
+extern "C" void on_btn_down_clicked(GtkButton *btn, gpointer user_data) {
+  std::cout << "Down" << std::endl;
+}
+
+/*  Called when larger-button is clicked.
+ *  inputs:  
+ *    btn: pointer to the button widget.
+ *    user_data: unknown or null.
+ */
+extern "C" void on_btn_larger_clicked(GtkButton *btn, gpointer user_data) {
+  std::cout << "Scale up" << std::endl;
+}
+
+
+/*  Called when lsmaller-button is clicked.
+ *  inputs:  
+ *    btn: pointer to the button widget.
+ *    user_data: unknown or null.
+ */
+extern "C" void on_btn_smaller_clicked(GtkButton *btn, gpointer user_data) {
+  std::cout << "Scale down" << std::endl;
+}
+
+/*  Called when orthographic-button is clicked.
+ *  inputs:  
+ *    btn: pointer to the button widget.
+ *    user_data: unknown or null.
+ */
+extern "C" void on_btn_orthographic_toggled(GtkToggleButton *btn, gpointer user_data) {
+  gboolean b = btn->active;
+  std::cout << "Orthographic: " << b << std::endl;
+}
+
+/*  Called when oblique-button is clicked.
+ *  inputs:  
+ *    btn: pointer to the button widget.
+ *    user_data: unknown or null.
+ */
+extern "C" void on_btn_oblique_toggled(GtkToggleButton *btn, gpointer user_data) {
+  gboolean b = btn->active;
+  std::cout << "Oblique: " << b << std::endl;
+}
+
+/*  Called when perspective-button is clicked.
+ *  inputs:  
+ *    btn: pointer to the button widget.
+ *    user_data: unknown or null.
+ */
+extern "C" void on_btn_perspective_toggled(GtkToggleButton *btn, gpointer user_data) {
+  gboolean b = btn->active;
+  std::cout << "Perspective: " << b << std::endl;
 }

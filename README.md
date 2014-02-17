@@ -13,6 +13,7 @@ The program requires Glut and Glew to compile, and is configured to be compiled 
 Compile with:
 
 ```make```
+
 ## Running
 ```./main [off-file]```
 

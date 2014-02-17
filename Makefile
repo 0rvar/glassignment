@@ -1,9 +1,14 @@
+SOURCES = transform.cpp matrix.cpp vertex.cpp off.cpp timer.cpp shadertools.cpp gui.cpp
+
 CXX=g++
 RM=rm -f
-CPPFLAGS = -g -Isrc/ -ansi -std=c++11 -Wall
-LDFLAGS = -g
-LDLIBS = -lGL -lGLU -lglut -lGLEW
-SOURCES = transform.cpp matrix.cpp vertex.cpp off.cpp timer.cpp shadertools.cpp
+DFLAGS  = -O0 -g3 -ggdb3 -fno-inline
+#DFLAGS = -O2
+WFLAGS   = -Wall -ansi -g -std=c++11 -Isrc/
+GLFLAGS  = `pkg-config --cflags gtk+-2.0`
+LGLFLAGS = `pkg-config --libs gtk+-2.0` -lGL -lGLEW -lGLU -lglut
+CXXFLAGS = $(WFLAGS) $(DFLAGS) $(GLFLAGS)
+LDFLAGS  =  -export-dynamic -lXext -lX11 $(LGLFLAGS)
 
 # Build object list from source list (build/&.o)
 OBJECTS = $(patsubst %.cpp,build/%.o,$(SOURCES))
@@ -15,11 +20,11 @@ all: main
 
 # Link main with objects
 main: $(OBJECTS) build/main.o
-	$(CXX) $(OBJECTS) build/main.o -o $@ $(LDFLAGS) $(LDLIBS)
+	$(CXX) $(OBJECTS) build/main.o -o $@ $(LDFLAGS)
 
 # Build objects
 build/%.o: src/%.cpp
-	$(CXX) $(CPPFLAGS) -c $< -o $@ 
+	$(CXX) $(CXXFLAGS) -c $< -o $@ 
 
 
 # Remove everything in build/ and build/tests
@@ -33,8 +38,8 @@ test: build/tests/runner
 
 # Link the test runner from all build/tests objects
 build/tests/runner: $(TESTS)
-	$(CXX) $(OBJECTS) $(TESTS) -o $@ $(LDFLAGS) $(LDLIBS)
+	$(CXX) $(OBJECTS) $(TESTS) -o $@ $(LDFLAGS)
 
 # Build test objects
 build/tests/%.o: tests/%.cpp $(OBJECTS)
-	$(CXX) $(CPPFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
