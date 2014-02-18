@@ -3,7 +3,7 @@
 #include "geometry.hpp"
 
 TEST_CASE( "New transform is identity matrix", "[transform]" ) {
-  mat4 m = mat4::Transform();
+  mat4 m = mat4::Identity();
   REQUIRE( m[0]  == 1 );
   REQUIRE( m[1]  == 0 );
   REQUIRE( m[2]  == 0 );
@@ -23,7 +23,7 @@ TEST_CASE( "New transform is identity matrix", "[transform]" ) {
 }
 
 TEST_CASE( "Translate", "[transform]" ) {
-  mat4 m = mat4::Transform().Translate(1, 2, 3);
+  mat4 m = mat4::Identity().Translate(1, 2, 3);
   CHECK( m[0]  == 1 );
   CHECK( m[1]  == 0 );
   CHECK( m[2]  == 0 );
@@ -45,7 +45,7 @@ TEST_CASE( "Translate", "[transform]" ) {
 TEST_CASE( "Scale", "[transform]" ) {
   float factor = 0.5;
 
-  mat4 m = mat4::Transform().Scale(factor);
+  mat4 m = mat4::Identity().Scale(factor);
   CHECK( m[0]  == factor );
   CHECK( m[1]  == 0 );
   CHECK( m[2]  == 0 );

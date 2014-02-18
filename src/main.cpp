@@ -6,6 +6,7 @@
 #include <vector>
 #include <algorithm>
 #include <gtk/gtk.h>
+#include <cmath>
 
 #include "geometry.hpp"
 #include "off.hpp"
@@ -28,7 +29,12 @@ void guiInit(int *, char**);
 void guiMainIteration(void);
 void gui_atclose();
 
-#define   BUFFER_OFFSET(i) ((char *)NULL + (i))
+void setOrthographic();
+void setOblique();
+void setPerspective();
+
+#define PI 3.141592f
+#define BUFFER_OFFSET(i) ((char *)NULL + (i))
 #define STATE_IDLE 0
 #define STATE_OPEN 1
 #define STATE_TRANSLATE 2
@@ -42,16 +48,25 @@ typedef struct S {
   int current, sub;
   S() : shouldUpdate(false),dx(0),dy(0),s(1),az(0),current(0),sub(0) {}
 } ControlState;
-
+ControlState state;
 
 GLuint    idTransMat;
+GLuint    idViewMat;
+GLuint    idProjMat;
+
 uint      vertexCount = 0;
-mat4      transform = mat4::Transform();
-ControlState state;
+vec3      p0 = vec3(2, 0, 2);
+vec3      pref = vec3(0, 0, 0);
+vec3      V = vec3(0, 1, 0);
+
+mat4      view = createViewMatrix(p0, pref, V);
+mat4      transform = mat4::Identity();
+mat4      projection = mat4::Identity();
 
 
 void idle() {
-  //guiMainIteration();
+  guiMainIteration();
+  
   if(!state.shouldUpdate) {
     return;
   }
@@ -72,11 +87,10 @@ void idle() {
     state.current = STATE_IDLE;
   } else {
     std::cout << "Updating transform" << std::endl;
-    transform = mat4::Transform()
+    transform = mat4::Identity()
       .RotateZ(state.az)
       .Scale(state.s)
-      .Translate(state.dx, state.dy, 0)
-      .Transpose();
+      .Translate(state.dx, state.dy, 0);
   }
 
   state.shouldUpdate = false;
@@ -179,8 +193,13 @@ void onSpecialDown(int key, int x, int y) {
 }
 
 void renderScene() {
-  glUniformMatrix4fv(idTransMat, 1, GL_FALSE,
+  glUniformMatrix4fv(idTransMat, 1, GL_TRUE,
             (const float*)&transform);
+  glUniformMatrix4fv(idViewMat, 1, GL_TRUE,
+            (const float*)&view);
+  glUniformMatrix4fv(idProjMat, 1, GL_TRUE,
+            (const float*)&projection);
+
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glDrawArrays(GL_TRIANGLES, 0, vertexCount);
   glutSwapBuffers();
@@ -252,8 +271,8 @@ void initGL(void) {
   glVertexAttribPointer(loc, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)BUFFER_OFFSET(0));
 
   idTransMat = glGetUniformLocation(program, "T");
-  glUniformMatrix4fv(idTransMat, 1, GL_FALSE,
-            (const float*)&transform);
+  idViewMat  = glGetUniformLocation(program, "V");
+  idProjMat  = glGetUniformLocation(program, "P");
 
   /* Set graphics attributes */
   glLineWidth(1.0);
@@ -269,6 +288,11 @@ void reshape(int width, int height) {
 }
 
 int main(int argc, char *argv[]) {
+  for(int i = 0; i < 16; i++) {
+    std::cout << view[i] << ", ";
+  }
+  std::cout << std::endl;
+
   /* Initialization */
   initGlut(argc, argv);
   initGL();
@@ -289,17 +313,62 @@ int main(int argc, char *argv[]) {
   }
 
   /* Initialize GUI */
-  //guiInit(&argc, argv);
-  //initGuiWindow("ass2gui.glade");
+  guiInit(&argc, argv);
+  initGuiWindow("ass2gui.glade");
 
   /* Set up exit function */
-  //atexit(&gui_atclose);
+  atexit(&gui_atclose);
+
+  setOrthographic();
+  state.shouldUpdate = true;
 
   /* Loop for a short while */
   glutMainLoop();
 
   return 0;
 }
+
+void setOrthographic() {
+  float left,right,top,bottom,far,near;
+  right = top = near = 5;
+  left = bottom = far = -5;
+
+  mat4 ST = mat4::Identity()
+      .Translate(-(left+right)/(right-left), -(top+bottom)/(top-bottom), -(far+near)/(far-near))
+      .Scale(2.0f/(right-left), 2.0f/(top-bottom), 2.0f/(far-near));
+
+  projection = ST;
+}
+
+void setOblique() {
+  float theta, psi;
+  theta = psi = PI/4;
+
+  mat4 H = mat4::Identity();
+  H[2] = cos(theta)/sin(theta);
+  H[6] = cos(psi)/sin(psi);
+
+  setOrthographic();
+  projection = projection * H;
+}
+
+void setPerspective() {
+  float left,right,top,bottom,far,near;
+  right = top = near = 5;
+  left = bottom = far = -5;
+  mat4 P;
+
+  P[0] = 2*near/(right-left);
+  P[5] = 2*near/(top-bottom);
+  P[2] = (right+left)/(right-left);
+  P[6] = (top+bottom)/(top-bottom);
+  P[10] = -(far+near)/(far-near);
+  P[11] = -(2*far*near)/(far-near);
+  P[14] = -1;
+
+  projection = P;
+}
+
 
 void gui_atclose() {
   std::cout << "Wut";
@@ -312,7 +381,13 @@ void gui_atclose() {
  */
 extern "C" void on_file_chooser_file_set(GtkFileChooser *filechooser, gpointer user_data) {
   gchar* filename = gtk_file_chooser_get_filename(filechooser);
-  std::cout << "File chosen: " << filename << std::endl;
+  try {
+    std::vector<vec3> vertices = readOFF(filename);
+    loadVertices(vertices);
+    state.shouldUpdate = true;
+  } catch(OFFParseException &e) {
+    std::cerr << "Invalid OFF-file: \"" << e.what() << "\" on line " << e.line << std::endl;
+  }
 }
 
 /*  Called when window closes.
@@ -331,7 +406,10 @@ extern "C" void on_window_hide(GtkWidget *widget, gpointer user_data) {
  *    user_data: unknown or null.
  */
 extern "C" void on_btn_left_clicked(GtkButton *btn, gpointer user_data) {
-  std::cout << "Left" << std::endl;
+  p0.x -= 0.1;
+  pref.x -= 0.1;
+  view = createViewMatrix(p0, pref, V);
+  state.shouldUpdate = true;
 }
 
 /*  Called when right-button is clicked.
@@ -340,7 +418,10 @@ extern "C" void on_btn_left_clicked(GtkButton *btn, gpointer user_data) {
  *    user_data: unknown or null.
  */
 extern "C" void on_btn_right_clicked(GtkButton *btn, gpointer user_data) {
-  std::cout << "Right" << std::endl;
+  p0.x += 0.1;
+  pref.x += 0.1;
+  view = createViewMatrix(p0, pref, V);
+  state.shouldUpdate = true;
 }
 
 /*  Called when up-button is clicked.
@@ -349,7 +430,10 @@ extern "C" void on_btn_right_clicked(GtkButton *btn, gpointer user_data) {
  *    user_data: unknown or null.
  */
 extern "C" void on_btn_up_clicked(GtkButton *btn, gpointer user_data) {
-  std::cout << "Up" << std::endl;
+  p0.y += 0.1;
+  pref.y += 0.1;
+  view = createViewMatrix(p0, pref, V);
+  state.shouldUpdate = true;
 }
 
 /*  Called when down-button is clicked.
@@ -358,7 +442,10 @@ extern "C" void on_btn_up_clicked(GtkButton *btn, gpointer user_data) {
  *    user_data: unknown or null.
  */
 extern "C" void on_btn_down_clicked(GtkButton *btn, gpointer user_data) {
-  std::cout << "Down" << std::endl;
+  p0.y -= 0.1;
+  pref.y -= 0.1;
+  view = createViewMatrix(p0, pref, V);
+  state.shouldUpdate = true;
 }
 
 /*  Called when larger-button is clicked.
@@ -367,7 +454,10 @@ extern "C" void on_btn_down_clicked(GtkButton *btn, gpointer user_data) {
  *    user_data: unknown or null.
  */
 extern "C" void on_btn_larger_clicked(GtkButton *btn, gpointer user_data) {
-  std::cout << "Scale up" << std::endl;
+  p0.z += 0.1;
+  pref.z += 0.1;
+  view = createViewMatrix(p0, pref, V);
+  state.shouldUpdate = true;
 }
 
 
@@ -377,7 +467,10 @@ extern "C" void on_btn_larger_clicked(GtkButton *btn, gpointer user_data) {
  *    user_data: unknown or null.
  */
 extern "C" void on_btn_smaller_clicked(GtkButton *btn, gpointer user_data) {
-  std::cout << "Scale down" << std::endl;
+  p0.z -= 0.1;
+  pref.z -= 0.1;
+  view = createViewMatrix(p0, pref, V);
+  state.shouldUpdate = true;
 }
 
 /*  Called when orthographic-button is clicked.
@@ -387,7 +480,10 @@ extern "C" void on_btn_smaller_clicked(GtkButton *btn, gpointer user_data) {
  */
 extern "C" void on_btn_orthographic_toggled(GtkToggleButton *btn, gpointer user_data) {
   gboolean b = btn->active;
-  std::cout << "Orthographic: " << b << std::endl;
+  if(b) {
+    setOrthographic();
+    state.shouldUpdate = true;
+  }
 }
 
 /*  Called when oblique-button is clicked.
@@ -397,7 +493,10 @@ extern "C" void on_btn_orthographic_toggled(GtkToggleButton *btn, gpointer user_
  */
 extern "C" void on_btn_oblique_toggled(GtkToggleButton *btn, gpointer user_data) {
   gboolean b = btn->active;
-  std::cout << "Oblique: " << b << std::endl;
+  if(b) {
+    setOblique();
+    state.shouldUpdate = true;
+  }
 }
 
 /*  Called when perspective-button is clicked.
@@ -407,5 +506,8 @@ extern "C" void on_btn_oblique_toggled(GtkToggleButton *btn, gpointer user_data)
  */
 extern "C" void on_btn_perspective_toggled(GtkToggleButton *btn, gpointer user_data) {
   gboolean b = btn->active;
-  std::cout << "Perspective: " << b << std::endl;
+  if(b) {
+    setPerspective();
+    state.shouldUpdate = true;
+  }
 }
