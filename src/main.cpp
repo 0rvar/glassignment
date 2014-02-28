@@ -63,6 +63,28 @@ mat4      view = createViewMatrix(p0, pref, V);
 mat4      transform = mat4::Identity();
 mat4      projection = mat4::Identity();
 
+#define glsl(x) "#version 140\n" #x
+const char* vertex_shader = glsl(
+  in vec3 vPosition;
+
+  uniform mat4 T;
+  uniform mat4 V;
+  uniform mat4 P;
+
+  void main() {
+    gl_Position =  P*V*T*vec4(vPosition, 1.0);
+  }
+);
+const char* fragment_shader = glsl(
+  out vec4 fColor;
+
+  void main() {
+    fColor = vec4( 1.0, 0.0, 0.0, 1.0 );
+  }
+);
+
+
+
 
 void idle() {
   guiMainIteration();
@@ -251,7 +273,7 @@ void initGL(void) {
   glewInit();
 
   /* Create and initialize a program object with shaders */
-  program = initProgram("vshader.glsl", "fshader.glsl");
+  program = Shading::initProgram(vertex_shader, fragment_shader);
 
   /* installs the program object as part of current rendering state */
   glUseProgram(program);

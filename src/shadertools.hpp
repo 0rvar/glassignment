@@ -7,13 +7,19 @@
 #include <GL/freeglut.h>
 #include <GL/freeglut_ext.h>
 
-typedef struct {
-        const char*  filename;
-        GLenum       type;
-        GLchar*      source;
-} Shader;
+namespace Shading {
 
-char* readShaderSource(const char*);
-extern GLuint initProgram(const char*, const char*);
+  typedef struct {
+          const char*  filename;
+          GLenum       type;
+          GLchar*      source;
+  } Shader;
+
+  char* readShaderSource(const char*);
+  GLuint initProgramFromFiles(const char*, const char*);
+  GLuint initProgram(const Shader vShader, const Shader fragShader);
+  GLuint initProgram(const char* vShaderSource, const char* hShaderSource);
+
+}
 
 #endif // SHADERTOOLS_HPP
