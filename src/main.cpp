@@ -35,6 +35,7 @@ void setPerspective();
 
 #define PI 3.141592f
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
+
 #define STATE_IDLE 0
 #define STATE_OPEN 1
 #define STATE_TRANSLATE 2
@@ -101,9 +102,9 @@ void idle() {
     std::cin >> filename;
 
     try {
-      vertices = readOFF(filename.c_str());
+      vertices = OFF::read(filename.c_str());
       loadVertices(vertices);
-    } catch(OFFParseException &e) {
+    } catch(OFF::ParseException &e) {
       std::cerr << "Invalid OFF-file: \"" << e.what() << "\" on line " << e.line << std::endl;
     }
     state.current = STATE_IDLE;
@@ -327,19 +328,19 @@ int main(int argc, char *argv[]) {
 
   if(argc > 1) {
     try {
-      std::vector<vec3> vertices = readOFF(argv[1]);
+      std::vector<vec3> vertices = OFF::read(argv[1]);
       loadVertices(vertices);
-    } catch(OFFParseException &e) {
+    } catch(OFF::ParseException &e) {
       std::cerr << "Invalid OFF-file: \"" << e.what() << "\" on line " << e.line << std::endl;
     }
   }
 
   /* Initialize GUI */
-  guiInit(&argc, argv);
-  initGuiWindow("ass2gui.glade");
+  //guiInit(&argc, argv);
+  //initGuiWindow("ass2gui.glade");
 
   /* Set up exit function */
-  atexit(&gui_atclose);
+  //atexit(&gui_atclose);
 
   setOrthographic();
   state.shouldUpdate = true;
@@ -394,142 +395,4 @@ void setPerspective() {
 
 void gui_atclose() {
   std::cout << "Wut";
-}
-
-/*  Called when a file is chosen.
- *  inputs:  
- *    btn: pointer to the button widget.
- *    user_data: unknown or null.
- */
-extern "C" void on_file_chooser_file_set(GtkFileChooser *filechooser, gpointer user_data) {
-  gchar* filename = gtk_file_chooser_get_filename(filechooser);
-  try {
-    std::vector<vec3> vertices = readOFF(filename);
-    loadVertices(vertices);
-    state.shouldUpdate = true;
-  } catch(OFFParseException &e) {
-    std::cerr << "Invalid OFF-file: \"" << e.what() << "\" on line " << e.line << std::endl;
-  }
-}
-
-/*  Called when window closes.
- *  inputs:  
- *    btn: pointer to the button widget.
- *    user_data: unknown or null.
- */
-extern "C" void on_window_hide(GtkWidget *widget, gpointer user_data) {
-  std::cout << "Exits" << std::endl;
-  exit(0);
-}
-
-/*  Called when left-button is clicked.
- *  inputs:  
- *    btn: pointer to the button widget.
- *    user_data: unknown or null.
- */
-extern "C" void on_btn_left_clicked(GtkButton *btn, gpointer user_data) {
-  p0.x -= 0.1;
-  pref.x -= 0.1;
-  view = createViewMatrix(p0, pref, V);
-  state.shouldUpdate = true;
-}
-
-/*  Called when right-button is clicked.
- *  inputs:  
- *    btn: pointer to the button widget.
- *    user_data: unknown or null.
- */
-extern "C" void on_btn_right_clicked(GtkButton *btn, gpointer user_data) {
-  p0.x += 0.1;
-  pref.x += 0.1;
-  view = createViewMatrix(p0, pref, V);
-  state.shouldUpdate = true;
-}
-
-/*  Called when up-button is clicked.
- *  inputs:  
- *    btn: pointer to the button widget.
- *    user_data: unknown or null.
- */
-extern "C" void on_btn_up_clicked(GtkButton *btn, gpointer user_data) {
-  p0.y += 0.1;
-  pref.y += 0.1;
-  view = createViewMatrix(p0, pref, V);
-  state.shouldUpdate = true;
-}
-
-/*  Called when down-button is clicked.
- *  inputs:  
- *    btn: pointer to the button widget.
- *    user_data: unknown or null.
- */
-extern "C" void on_btn_down_clicked(GtkButton *btn, gpointer user_data) {
-  p0.y -= 0.1;
-  pref.y -= 0.1;
-  view = createViewMatrix(p0, pref, V);
-  state.shouldUpdate = true;
-}
-
-/*  Called when larger-button is clicked.
- *  inputs:  
- *    btn: pointer to the button widget.
- *    user_data: unknown or null.
- */
-extern "C" void on_btn_larger_clicked(GtkButton *btn, gpointer user_data) {
-  p0.z += 0.1;
-  pref.z += 0.1;
-  view = createViewMatrix(p0, pref, V);
-  state.shouldUpdate = true;
-}
-
-
-/*  Called when lsmaller-button is clicked.
- *  inputs:  
- *    btn: pointer to the button widget.
- *    user_data: unknown or null.
- */
-extern "C" void on_btn_smaller_clicked(GtkButton *btn, gpointer user_data) {
-  p0.z -= 0.1;
-  pref.z -= 0.1;
-  view = createViewMatrix(p0, pref, V);
-  state.shouldUpdate = true;
-}
-
-/*  Called when orthographic-button is clicked.
- *  inputs:  
- *    btn: pointer to the button widget.
- *    user_data: unknown or null.
- */
-extern "C" void on_btn_orthographic_toggled(GtkToggleButton *btn, gpointer user_data) {
-  gboolean b = btn->active;
-  if(b) {
-    setOrthographic();
-    state.shouldUpdate = true;
-  }
-}
-
-/*  Called when oblique-button is clicked.
- *  inputs:  
- *    btn: pointer to the button widget.
- *    user_data: unknown or null.
- */
-extern "C" void on_btn_oblique_toggled(GtkToggleButton *btn, gpointer user_data) {
-  gboolean b = btn->active;
-  if(b) {
-    setOblique();
-    state.shouldUpdate = true;
-  }
-}
-
-/*  Called when perspective-button is clicked.
- *  inputs:  
- *    btn: pointer to the button widget.
- *    user_data: unknown or null.
- */
-extern "C" void on_btn_perspective_toggled(GtkToggleButton *btn, gpointer user_data) {
-  gboolean b = btn->active;
-  if(b) {
-    setPerspective();
-    state.shouldUpdate = true;
-  }
 }

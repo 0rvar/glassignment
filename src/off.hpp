@@ -13,30 +13,36 @@
 #ifndef OFF_HPP
 #define	OFF_HPP
 
-typedef struct {
+namespace OFF {
+
+  using veclist = std::vector<vec3>;
+
+  typedef struct {
     int numVertices;
     int numFaces;
     int numEdges;
-} OFFHeader;
+  } header;
 
-std::vector<vec3> readOFF(std::string fileName);
-std::vector<vec3> parseOFF(std::string content);
-OFFHeader parseOFFheader(std::string line);
-vec3 parseOFFvertex(std::string line);
-std::vector<int> parseOFFface(std::string line);
+  veclist read(std::string fileName);
+  veclist parse(std::string content);
+  header parseHeader(std::string line);
+  vec3 parseVertex(std::string line);
+  std::vector<int> parseFace(std::string line);
+  veclist normalize(veclist);
 
-
-class OFFParseException: public std::exception {
+  class ParseException: public std::exception {
   private:
     std::string msg;
 
   public:
-    OFFParseException();
-    OFFParseException(std::string message, int line);
-    virtual ~OFFParseException() throw();
+    ParseException();
+    ParseException(std::string message, int line);
+    virtual ~ParseException() throw();
     virtual const char* what() const throw();
     const int line;
-};
+  };
+
+}
 
 #endif	/* OFF_HPP */
 
