@@ -11,6 +11,7 @@
 #include "geometry.hpp"
 #include "off.hpp"
 #include "shadertools.hpp"
+#include "camera.hpp"
 
 #include "timer.hpp"
 
@@ -45,9 +46,9 @@ void setPerspective();
 #define SUBSTATE_TRANSLATE_Y 1
 typedef struct S {
   bool shouldUpdate;
-  float dx, dy, s, az;
+  float dx, dy, s, ax, ay, az;
   int current, sub;
-  S() : shouldUpdate(false),dx(0),dy(0),s(1),az(0),current(0),sub(0) {}
+  S() : shouldUpdate(false),dx(0),dy(0),s(1),ax(0),ay(0),az(0),current(0),sub(0) {}
 } ControlState;
 ControlState state;
 
@@ -58,34 +59,59 @@ GLuint    idProjMat;
 uint      vertexCount = 0;
 vec3      p0 = vec3(2, 0, 2);
 vec3      pref = vec3(0, 0, 0);
-vec3      V = vec3(0, 1, 0);
+vec3      up = vec3(0, 1, 0);
 
-mat4      view = createViewMatrix(p0, pref, V);
+camera    cam = camera(p0, pref, up);
 mat4      transform = mat4::Identity();
 mat4      projection = mat4::Identity();
 
 #define glsl(x) "#version 140\n" #x
-const char* vertex_shader = glsl(
+const char* const vertex_shader = glsl(
   in vec3 vPosition;
 
+  uniform mat4 P;
   uniform mat4 T;
   uniform mat4 V;
-  uniform mat4 P;
 
   void main() {
     gl_Position =  P*V*T*vec4(vPosition, 1.0);
   }
 );
-const char* fragment_shader = glsl(
+const char* const fragment_shader = glsl(
   out vec4 fColor;
 
   void main() {
-    fColor = vec4( 1.0, 0.0, 0.0, 1.0 );
+    fColor = vec4( 0.804, 0.416, 0.667, 1.0 );
+    //fColor = vec4( 1.0, 0.0, 0.0, 1.0 );
   }
 );
 
+void renderScene() {
+  glUniformMatrix4fv(idTransMat, 1, GL_TRUE,
+            (const float*)&transform);
+  glUniformMatrix4fv(idViewMat, 1, GL_TRUE,
+            (const float*)cam.GetView());
+  glUniformMatrix4fv(idProjMat, 1, GL_TRUE,
+            (const float*)&projection);
 
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  // glDrawArrays(GL_LINE_LOOP, 0, vertexCount);
+  glDrawArrays(GL_TRIANGLES, 0, vertexCount);
+  glutSwapBuffers();
 
+  std::cout << cam << std::endl;
+}
+
+void loadVertices(std::vector<vec3> vertices) {
+  vec3 buf[vertices.size()];
+  for(uint i = 0; i < vertices.size(); i++) {
+    buf[i] = vertices[i];
+  }
+  vertexCount = vertices.size();
+
+  /* Load it to the buffer data array */
+  glBufferData(GL_ARRAY_BUFFER, sizeof(buf), buf, GL_STATIC_DRAW );
+}
 
 void idle() {
   guiMainIteration();
@@ -111,6 +137,8 @@ void idle() {
   } else {
     std::cout << "Updating transform" << std::endl;
     transform = mat4::Identity()
+      .RotateX(state.ax)
+      .RotateY(state.ay)
       .RotateZ(state.az)
       .Scale(state.s)
       .Translate(state.dx, state.dy, 0);
@@ -122,49 +150,18 @@ void idle() {
 }
 
 void onKeyDown(unsigned char key, int x, int y){
-  if(key == 'o') {
-    state.current = STATE_OPEN;
-  } else if(key == 't') {
-    state.current = STATE_TRANSLATE;
-    state.sub = SUBSTATE_TRANSLATE_X;
-    std::cout << "Entering translate mode for X" << std::endl;
+  if(key == 'a') {
+    cam.Strafe(-0.1);
+  } else if(key == 'd') {
+    cam.Strafe(0.1);
+  } else if(key == 'w') {
+    cam.Drive(0.1);
   } else if(key == 's') {
-    state.current = STATE_SCALE;
-    std::cout << "Entering scale mode" << std::endl;
-  } else if(key == 'r') {
-    state.current = STATE_ROTATE;
-    std::cout << "Entering rotate mode around Z" << std::endl;
-  } else if(key == 'x' || key == 'y') {
-    if(state.current == STATE_TRANSLATE) {
-      if(key == 'x') {
-        state.sub = SUBSTATE_TRANSLATE_X;
-        std::cout << "Entering translate mode for X" << std::endl;
-      } else if(key == 'y') {
-        state.sub = SUBSTATE_TRANSLATE_Y;
-        std::cout << "Entering translate mode for Y" << std::endl;
-      }
-    }
-  } else if(key == '+' || key == '-') {
-    float sign = -1.0; float diff;
-    if(key == '+') { sign = 1.0; }
-
-    switch(state.current) {
-    case STATE_TRANSLATE:
-      diff = 0.1 * sign;
-      if(state.sub == SUBSTATE_TRANSLATE_X) {
-        state.dx += diff;
-      } else {
-        state.dy += diff;
-      }
-      break;  
-    case STATE_SCALE:
-      diff = 0.1 * sign;
-      state.s += diff;
-      break;
-    case STATE_ROTATE:
-      diff = 3.141592/36 * sign;
-      state.az += diff;
-    }
+    cam.Drive(-0.1);
+  } else if(key == 'q') {
+    cam.Elevate(0.1);
+  } else if(key == 'e') {
+    cam.Elevate(-0.1);
   } else {
     return;
   }
@@ -176,7 +173,24 @@ void onKeyDown(unsigned char key, int x, int y){
 void onSpecialDown(int key, int x, int y) {
   int mod = glutGetModifiers();
 
-  if(mod & GLUT_ACTIVE_SHIFT) {
+  if(mod & GLUT_ACTIVE_CTRL) {
+    switch(key) {
+    case GLUT_KEY_UP:
+      state.ax += 3.141592/36;
+      break;
+    case GLUT_KEY_DOWN:
+      state.ax += 3.141592/36;
+      break;
+    case GLUT_KEY_RIGHT:
+      state.ay -= 3.141592/36;
+      break;
+    case GLUT_KEY_LEFT:
+      state.ay += 3.141592/36;
+      break;
+    default:
+      return;
+    }
+  } else if(mod & GLUT_ACTIVE_SHIFT) {
     switch(key) {
     case GLUT_KEY_UP:
       state.s += 0.1;
@@ -215,34 +229,6 @@ void onSpecialDown(int key, int x, int y) {
   state.shouldUpdate = true;
 }
 
-void renderScene() {
-  glUniformMatrix4fv(idTransMat, 1, GL_TRUE,
-            (const float*)&transform);
-  glUniformMatrix4fv(idViewMat, 1, GL_TRUE,
-            (const float*)&view);
-  glUniformMatrix4fv(idProjMat, 1, GL_TRUE,
-            (const float*)&projection);
-
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glDrawArrays(GL_TRIANGLES, 0, vertexCount);
-  glutSwapBuffers();
-
-  std::cout << "dx: " << state.dx << ", " \
-            << "dy: " << state.dy << ", " \
-            << "s: "  << state.s  << ", " \
-            << "az: " << state.az << std::endl;
-}
-
-void loadVertices(std::vector<vec3> vertices) {
-  vec3 buf[vertices.size()];
-  for(uint i = 0; i < vertices.size(); i++) {
-    buf[i] = vertices[i];
-  }
-  vertexCount = vertices.size();
-
-  /* Load it to the buffer data array */
-  glBufferData(GL_ARRAY_BUFFER, sizeof(buf), buf, GL_STATIC_DRAW );
-}
 
 void initGlut(int argc, char **argv) {
   /* Initialize glut */
@@ -311,11 +297,6 @@ void reshape(int width, int height) {
 }
 
 int main(int argc, char *argv[]) {
-  for(int i = 0; i < 16; i++) {
-    std::cout << view[i] << ", ";
-  }
-  std::cout << std::endl;
-
   /* Initialization */
   initGlut(argc, argv);
   initGL();

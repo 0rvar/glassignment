@@ -10,6 +10,7 @@ public:
   vec3(float _x, float _y, float _z): x(_x), y(_y), z(_z) {};
 
   vec3 operator-(const vec3& other);
+  vec3 operator+(const vec3& other);
   vec3 operator*(const float factor);
   vec3 cross(vec3 other);
   vec3 normalize();
@@ -39,6 +40,7 @@ public:
 
     mat4 operator+(const mat4& other);
     mat4 operator*(const mat4& other);
+    vec3 operator*(const vec3& other);
     mat4 Transpose();
 
     static mat4 Identity();
@@ -53,9 +55,7 @@ private:
     float mat[16] = {0};
 };
 
-mat4 createViewMatrix(vec3 p0, vec3 pref, vec3 V);
-
 std::ostream& operator<<(std::ostream &strm, const vec3 &v);
-std::ostream& operator<<(std::ostream &strm, const vec3 &v);
+std::ostream& operator<<(std::ostream &strm, const vec4 &v);
 
 #endif  /* GEOMETRY_HPP */

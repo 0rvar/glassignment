@@ -1,10 +1,3 @@
-/* 
- * File:   off.hpp
- * Author: orvar
- *
- * Created on 31 January 2014, 17:04
- */
-
 #include <string>
 #include <exception>
 #include <vector>

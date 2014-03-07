@@ -1,4 +1,4 @@
-SOURCES = geometry.cpp off.cpp timer.cpp shadertools.cpp gui.cpp
+SOURCES = camera.cpp geometry.cpp off.cpp timer.cpp shadertools.cpp gui.cpp
 
 CXX=g++
 RM=rm -f
@@ -37,9 +37,9 @@ test: build/tests/runner
 	build/tests/runner
 
 # Link the test runner from all build/tests objects
-build/tests/runner: $(TESTS)
+build/tests/runner: $(TESTS) $(OBJECTS)
 	$(CXX) $(OBJECTS) $(TESTS) -o $@ $(LDFLAGS)
 
 # Build test objects
-build/tests/%.o: tests/%.cpp $(OBJECTS)
+build/tests/%.o: tests/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@

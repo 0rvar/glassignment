@@ -10,6 +10,14 @@ vec3 vec3::operator-(const vec3& b) {
   return r;
 }
 
+vec3 vec3::operator+(const vec3& b) {
+  vec3 r, a = (*this);
+  r.x =  a.x + b.x;
+  r.y =  a.y + b.y;
+  r.z =  a.z + b.z;
+  return r;
+}
+
 vec3 vec3::operator*(const float factor) {
   vec3 r = (*this);
   r.x *= factor;
@@ -54,6 +62,24 @@ mat4 mat4::operator*(const mat4& other) {
       }
     }
   }
+  return result;
+}
+
+vec3 mat4::operator*(const vec3& other) {
+  vec3 result;
+  
+  result.x += mat[0*4 + 0] * other.x;
+  result.x += mat[0*4 + 1] * other.y;
+  result.x += mat[0*4 + 2] * other.z;
+
+  result.y += mat[1*4 + 0] * other.x;
+  result.y += mat[1*4 + 1] * other.y;
+  result.y += mat[1*4 + 2] * other.z;
+
+  result.z += mat[2*4 + 0] * other.x;
+  result.z += mat[2*4 + 1] * other.y;
+  result.z += mat[2*4 + 2] * other.z;
+
   return result;
 }
 
@@ -132,26 +158,6 @@ mat4 mat4::Transpose() {
     }
   }
   return m;
-}
-
-mat4 createViewMatrix(vec3 p0, vec3 pref, vec3 V) {
-  vec3 n = (p0 - pref).normalize();
-  vec3 u = V.cross(n).normalize();
-  vec3 v = n.cross(u);
-
-  mat4 M;
-  M[15] = 1;
-  M[0] = u.x;
-  M[1] = u.y;
-  M[2] = u.z;
-  M[4] = v.x;
-  M[5] = v.y;
-  M[6] = v.z;
-  M[8] = n.x;
-  M[9] = n.y;
-  M[10]= n.z;
-
-  return M.Translate(vec3() - p0);
 }
 
 std::ostream& operator<<(std::ostream &strm, const vec3 &v) {
