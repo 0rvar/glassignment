@@ -169,3 +169,15 @@ std::ostream& operator<<(std::ostream &strm, const vec4 &v) {
   strm << "vec4(" << v.x << ", " << v.y << ", " << v.z << ", " << v.w << ")";
   return strm;
 }
+
+std::ostream& operator<<(std::ostream &strm, const mat4 &m) {
+  strm << "mat4 =";
+  for(int i = 0; i < 16; i++) {
+    if(i % 4 == 0) {
+      strm << std::endl << "\t";
+    }
+    strm << m[i] << " ";
+  }
+  strm << std::endl;
+  return strm;
+}

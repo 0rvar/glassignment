@@ -324,6 +324,7 @@ int main(int argc, char *argv[]) {
   //atexit(&gui_atclose);
 
   setOrthographic();
+  //setPerspective();
   state.shouldUpdate = true;
 
   /* Loop for a short while */
@@ -358,14 +359,20 @@ void setOblique() {
 
 void setPerspective() {
   float left,right,top,bottom,far,near;
-  right = top = near = 5;
-  left = bottom = far = -5;
+  right = top = near = 10;
+  left = bottom = far = -10;
   mat4 P;
 
-  P[0] = 2*near/(right-left);
-  P[5] = 2*near/(top-bottom);
-  P[2] = (right+left)/(right-left);
-  P[6] = (top+bottom)/(top-bottom);
+  // P[0] = 2*near/(right-left);
+  // P[5] = 2*near/(top-bottom);
+  // P[2] = (right+left)/(right-left);
+  // P[6] = (top+bottom)/(top-bottom);
+  // P[10] = -(far+near)/(far-near);
+  // P[11] = -(2*far*near)/(far-near);
+  // P[14] = -1;
+
+  P[0] = near/right;
+  P[5] = near/top;
   P[10] = -(far+near)/(far-near);
   P[11] = -(2*far*near)/(far-near);
   P[14] = -1;

@@ -57,5 +57,6 @@ private:
 
 std::ostream& operator<<(std::ostream &strm, const vec3 &v);
 std::ostream& operator<<(std::ostream &strm, const vec4 &v);
+std::ostream& operator<<(std::ostream &strm, const mat4 &m);
 
 #endif  /* GEOMETRY_HPP */
