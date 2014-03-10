@@ -9,7 +9,7 @@
 #include <cmath>
 
 #include "geometry.hpp"
-#include "off.hpp"
+#include "model.hpp"
 #include "shadertools.hpp"
 #include "camera.hpp"
 
@@ -23,7 +23,7 @@ void renderScene();
 void loadVertices(std::vector<vec3>);
 void initGlut(int, char**);
 void initGL();
-void reshape();
+void reshape(int width, int height);
 
 void initGuiWindow(const char*);
 void guiInit(int *, char**);
@@ -32,8 +32,7 @@ void gui_atclose();
 
 void setOrthographic();
 void setOblique();
-void setPerspective();
-
+void setPerspective(const float &far, const float &near, const float &fov);
 #define PI 3.141592f
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
@@ -98,8 +97,6 @@ void renderScene() {
   // glDrawArrays(GL_LINE_LOOP, 0, vertexCount);
   glDrawArrays(GL_TRIANGLES, 0, vertexCount);
   glutSwapBuffers();
-
-  std::cout << cam << std::endl;
 }
 
 void loadVertices(std::vector<vec3> vertices) {
@@ -114,59 +111,159 @@ void loadVertices(std::vector<vec3> vertices) {
 }
 
 void idle() {
-  guiMainIteration();
+  //guiMainIteration();
   
   if(!state.shouldUpdate) {
     return;
   }
 
-  if(state.current == STATE_OPEN) {
-    std::string filename;
-    std::vector<vec3> vertices;
+  std::cout << "idle()" << std::endl;
+  
+  transform = mat4::Identity()
+    .RotateX(state.ax)
+    .RotateY(state.ay)
+    .RotateZ(state.az)
+    .Scale(state.s)
+    .Translate(state.dx, state.dy, 0);
 
-    std::cout << "Enter filename: ";
-    std::cin >> filename;
-
-    try {
-      vertices = OFF::read(filename.c_str());
-      loadVertices(vertices);
-    } catch(OFF::ParseException &e) {
-      std::cerr << "Invalid OFF-file: \"" << e.what() << "\" on line " << e.line << std::endl;
-    }
-    state.current = STATE_IDLE;
-  } else {
-    std::cout << "Updating transform" << std::endl;
-    transform = mat4::Identity()
-      .RotateX(state.ax)
-      .RotateY(state.ay)
-      .RotateZ(state.az)
-      .Scale(state.s)
-      .Translate(state.dx, state.dy, 0);
-  }
-
+  std::cout << transform << std::endl;
+  std::cout << cam << std::endl;
+  
   state.shouldUpdate = false;
 
   glutPostRedisplay();
 }
 
+void initGlut(int argc, char **argv) {
+  /* Initialize glut */
+  glutInit(&argc, argv);
+
+  /* Display Mode 
+      GLUT_DOUBLE together with glutSwapBuffers(); for double buffering */
+  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
+  /* Window Size */
+  glutInitWindowSize(300, 300);
+  glutInitContextProfile( GLUT_CORE_PROFILE );
+  /* GL Version 
+     Check with glxinfo | grep Open for supported version */
+  glutInitContextVersion(3, 1);    
+
+  /* Window label */
+  glutCreateWindow("Assignment 1");
+}
+
+
+void initGL(void) {
+  GLuint program;
+  GLuint buffer;
+  GLuint loc;
+  GLuint vao;
+
+  /* Setting up GL Extensions */
+  glewExperimental = GL_TRUE; 
+  glewInit();
+
+  /* Create and initialize a program object with shaders */
+  program = Shading::initProgram(vertex_shader, fragment_shader);
+
+  /* installs the program object as part of current rendering state */
+  glUseProgram(program);
+
+  /* Creat a vertex array object */ 
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+  
+  /* Create buffer in the shared display list space and 
+     bind it as GL_ARRAY_BUFFER */
+  glGenBuffers( 1, &buffer);
+  glBindBuffer( GL_ARRAY_BUFFER, buffer);
+  
+  /* Initialize attribute vPosition in program */
+  loc = glGetAttribLocation( program, "vPosition");
+  glEnableVertexAttribArray(loc);
+  glVertexAttribPointer(loc, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)BUFFER_OFFSET(0));
+
+  // normal = glGetAttribLocation( program, "vNormal");
+  // glEnableVertexAttribArray(normal);
+  // glVertexAttribPointer(normal, 3, GL_FLOAT, GL_FALSE, 3, (GLvoid*)BUFFER_OFFSET(3));
+
+
+  idTransMat = glGetUniformLocation(program, "T");
+  idViewMat  = glGetUniformLocation(program, "V");
+  idProjMat  = glGetUniformLocation(program, "P");
+
+  /* Set graphics attributes */
+  glLineWidth(1.0);
+  glPointSize(1.0);
+  glClearColor(0.0, 0.0, 0.0, 0.0);
+
+  glEnable(GL_CULL_FACE);
+}
+
+int main(int argc, char *argv[]) {
+  /* Initialization */
+  initGlut(argc, argv);
+  initGL();
+
+  glutDisplayFunc(renderScene);
+  glutIdleFunc(idle);
+  glutKeyboardFunc(onKeyDown); //glutKeyboardUpFunc(onKeyUp);
+  glutSpecialFunc(onSpecialDown);
+  glutReshapeFunc(reshape);
+
+  if(argc > 1) {
+    try {
+      std::vector<vec3> vertices = model::read(argv[1]);
+      loadVertices(vertices);
+    } catch(model::ParseException &e) {
+      std::cerr << "Invalid OFF-file: \"" << e.what() << "\" on line " << e.line << std::endl;
+    }
+  }
+
+  /* Initialize GUI */
+  //guiInit(&argc, argv);
+  //initGuiWindow("ass2gui.glade");
+
+  /* Set up exit function */
+  //atexit(&gui_atclose);
+
+  setPerspective(100, 0.1, 90);
+  //setPerspective();
+  state.shouldUpdate = true;
+
+  /* Loop for a short while */
+  glutMainLoop();
+
+  return 0;
+}
+
+
+void reshape(int width, int height) {
+  int size = std::min(width, height);
+  int x_off = (width-size)/2;
+  int y_off = (height-size)/2;
+  glViewport(x_off, y_off, size, size);
+}
+
 void onKeyDown(unsigned char key, int x, int y){
   if(key == 'a') {
-    cam.Strafe(-0.1);
-  } else if(key == 'd') {
     cam.Strafe(0.1);
-  } else if(key == 'w') {
+  } else if(key == 'd') {
+    cam.Strafe(-0.1);
+  }
+
+  if(key == 'w') {
     cam.Drive(0.1);
   } else if(key == 's') {
     cam.Drive(-0.1);
-  } else if(key == 'q') {
+  }
+
+  if(key == 'q') {
     cam.Elevate(0.1);
   } else if(key == 'e') {
     cam.Elevate(-0.1);
-  } else {
-    return;
   }
   
-  std::cout.flush();
   state.shouldUpdate = true;
 }
 
@@ -229,110 +326,6 @@ void onSpecialDown(int key, int x, int y) {
   state.shouldUpdate = true;
 }
 
-
-void initGlut(int argc, char **argv) {
-  /* Initialize glut */
-  glutInit(&argc, argv);
-
-  /* Display Mode 
-      GLUT_DOUBLE together with glutSwapBuffers(); for double buffering */
-  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
-  /* Window Size */
-  glutInitWindowSize(300, 300);
-  glutInitContextProfile( GLUT_CORE_PROFILE );
-  /* GL Version 
-     Check with glxinfo | grep Open for supported version */
-  glutInitContextVersion(3, 1);    
-
-  /* Window label */
-  glutCreateWindow("Assignment 1");
-}
-
-
-void initGL(void) {
-  GLuint program;
-  GLuint buffer;
-  GLuint loc;
-  GLuint vao;
-
-  /* Setting up GL Extensions */
-  glewExperimental = GL_TRUE; 
-  glewInit();
-
-  /* Create and initialize a program object with shaders */
-  program = Shading::initProgram(vertex_shader, fragment_shader);
-
-  /* installs the program object as part of current rendering state */
-  glUseProgram(program);
-
-  /* Creat a vertex array object */ 
-  glGenVertexArrays(1, &vao);
-  glBindVertexArray(vao);
-  
-  /* Create buffer in the shared display list space and 
-     bind it as GL_ARRAY_BUFFER */
-  glGenBuffers( 1, &buffer);
-  glBindBuffer( GL_ARRAY_BUFFER, buffer);
-  
-  /* Initialize attribute vPosition in program */
-  loc = glGetAttribLocation( program, "vPosition");
-  glEnableVertexAttribArray(loc);
-  glVertexAttribPointer(loc, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)BUFFER_OFFSET(0));
-
-  idTransMat = glGetUniformLocation(program, "T");
-  idViewMat  = glGetUniformLocation(program, "V");
-  idProjMat  = glGetUniformLocation(program, "P");
-
-  /* Set graphics attributes */
-  glLineWidth(1.0);
-  glPointSize(1.0);
-  glClearColor(0.0, 0.0, 0.0, 0.0);
-}
-
-void reshape(int width, int height) {
-  int size = std::min(width, height);
-  int x_off = (width-size)/2;
-  int y_off = (height-size)/2;
-  glViewport(x_off, y_off, size, size);
-}
-
-int main(int argc, char *argv[]) {
-  /* Initialization */
-  initGlut(argc, argv);
-  initGL();
-
-  glutDisplayFunc(renderScene);
-  glutIdleFunc(idle);
-  glutKeyboardFunc(onKeyDown); //glutKeyboardUpFunc(onKeyUp);
-  glutSpecialFunc(onSpecialDown);
-  glutReshapeFunc(reshape);
-
-  if(argc > 1) {
-    try {
-      std::vector<vec3> vertices = OFF::read(argv[1]);
-      loadVertices(vertices);
-    } catch(OFF::ParseException &e) {
-      std::cerr << "Invalid OFF-file: \"" << e.what() << "\" on line " << e.line << std::endl;
-    }
-  }
-
-  /* Initialize GUI */
-  //guiInit(&argc, argv);
-  //initGuiWindow("ass2gui.glade");
-
-  /* Set up exit function */
-  //atexit(&gui_atclose);
-
-  setOrthographic();
-  //setPerspective();
-  state.shouldUpdate = true;
-
-  /* Loop for a short while */
-  glutMainLoop();
-
-  return 0;
-}
-
 void setOrthographic() {
   float left,right,top,bottom,far,near;
   right = top = near = 5;
@@ -357,25 +350,15 @@ void setOblique() {
   projection = projection * H;
 }
 
-void setPerspective() {
-  float left,right,top,bottom,far,near;
-  right = top = near = 10;
-  left = bottom = far = -10;
+void setPerspective(const float &far, const float &near, const float &fov) {
+  float scale = 1.0/tan(fov / 360.0 * PI);
   mat4 P;
-
-  // P[0] = 2*near/(right-left);
-  // P[5] = 2*near/(top-bottom);
-  // P[2] = (right+left)/(right-left);
-  // P[6] = (top+bottom)/(top-bottom);
-  // P[10] = -(far+near)/(far-near);
-  // P[11] = -(2*far*near)/(far-near);
-  // P[14] = -1;
-
-  P[0] = near/right;
-  P[5] = near/top;
-  P[10] = -(far+near)/(far-near);
-  P[11] = -(2*far*near)/(far-near);
-  P[14] = -1;
+  P[0*4 + 0] = scale;
+  P[1*4 + 1] = scale;
+  P[2*4 + 2] = - far / (far - near);
+  P[2*4 + 3] = - far * near / (far - near);
+  P[3*4 + 2] = - 1;
+  P[3*4 + 3] = 0;
 
   projection = P;
 }

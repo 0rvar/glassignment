@@ -55,6 +55,16 @@ private:
     float mat[16] = {0};
 };
 
+class polygon {
+public:
+  vec3 v1, v2, v3, normal;
+  polygon():
+      v1(vec3(0, 0, 0)),
+      v2(vec3(0, 0, 0)),
+      v3(vec3(0, 0, 0)),
+      normal(vec3(0, 0, 0)){};
+};
+
 std::ostream& operator<<(std::ostream &strm, const vec3 &v);
 std::ostream& operator<<(std::ostream &strm, const vec4 &v);
 std::ostream& operator<<(std::ostream &strm, const mat4 &m);

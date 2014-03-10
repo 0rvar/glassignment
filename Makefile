@@ -1,4 +1,4 @@
-SOURCES = camera.cpp geometry.cpp off.cpp timer.cpp shadertools.cpp gui.cpp
+SOURCES = camera.cpp geometry.cpp model.cpp timer.cpp shadertools.cpp gui.cpp
 
 CXX=g++
 RM=rm -f

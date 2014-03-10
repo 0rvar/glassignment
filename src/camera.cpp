@@ -7,14 +7,14 @@ camera::camera() {
   vec3 p0 = vec3(2, 0, 2);
   vec3 pref = vec3(0, 0, 0);
   vec3 up = vec3(0, 1, 0);
-  Move(p0, pref, up);
+  MoveTo(p0, pref, up);
 }
 
 camera::camera(vec3 p0, vec3 pref, vec3 up) {
-  Move(p0, pref, up);
+  MoveTo(p0, pref, up);
 }
 
-void camera::Move(vec3 p0, vec3 pref, vec3 up) {
+void camera::MoveTo(vec3 p0, vec3 pref, vec3 up) {
   vec3 n = (p0 - pref).normalize();
   vec3 u = up.cross(n).normalize();
   vec3 v = n.cross(u);
@@ -51,29 +51,31 @@ mat4* camera::GetView() {
 }
 
 void camera::Strafe(float delta) {
-  vec3 p0   =  this->view_inverse * vec3(delta, 0, 0);
-  vec3 pref =  this->view_inverse * vec3(delta, 0, -1);
-  vec3 up   =  vec3(0, 1, 0);
-  Move(p0, pref, up);
+  vec3 vdelta = cached_p0.cross(cached_up).normalize() * delta;
+  vec3 p0   =  cached_p0 + vdelta;
+  vec3 pref =  cached_pref + vdelta;
+  MoveTo(p0, pref, cached_up);
 }
 
 void camera::Drive(float delta) {
-  vec3 p0   = view_inverse * vec3(0, 0, delta);
-  vec3 pref = view_inverse * vec3(0, 0, delta-1);
-  Move(p0, pref, cached_up);
+  vec3 vdelta = (cached_pref - cached_p0).normalize() * delta;
+  vec3 p0   = cached_p0 + vdelta;
+  vec3 pref = cached_pref + vdelta;
+  MoveTo(p0, pref, cached_up);
 }
 
 void camera::Elevate(float delta) {
-  vec3 p0   = cached_p0 + view_inverse * vec3(0, delta, 0);
-  vec3 pref = cached_pref + view_inverse * vec3(0, delta, -1);
-  Move(p0, pref, cached_up);
+  vec3 vdelta = cached_up.normalize() * delta;
+  vec3 p0   = cached_p0 + vdelta;
+  vec3 pref = cached_pref + vdelta;
+  MoveTo(p0, pref, cached_up);
 }
 
 void camera::RotateY(float alpha) {
   vec3 pref = view_inverse 
       * mat4::Identity().RotateY(alpha) 
       * vec3(0, 0, -1);
-  Move(cached_p0, pref, cached_up);
+  MoveTo(cached_p0, pref, cached_up);
 }
 
 // Debugging

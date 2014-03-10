@@ -3,10 +3,10 @@
 #include <vector>
 #include "geometry.hpp"
 
-#ifndef OFF_HPP
-#define	OFF_HPP
+#ifndef MODEL_HPP
+#define	MODEL_HPP
 
-namespace OFF {
+namespace model {
 
   using veclist = std::vector<vec3>;
 
@@ -37,5 +37,5 @@ namespace OFF {
 
 }
 
-#endif	/* OFF_HPP */
+#endif	/* MODEL_HPP */
 

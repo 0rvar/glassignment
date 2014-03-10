@@ -16,7 +16,7 @@ private:
 public:
   camera();
   camera(vec3 p0, vec3 pref, vec3 up);
-  void Move(vec3 delta_p0, vec3 delta_pref, vec3 delta_up);
+  void MoveTo(vec3 delta_p0, vec3 delta_pref, vec3 delta_up);
   mat4* GetView();
 
   void Strafe(float delta);

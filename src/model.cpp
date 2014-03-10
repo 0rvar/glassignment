@@ -6,9 +6,9 @@
 #include <limits>
 
 #include "geometry.hpp"
-#include "off.hpp"
+#include "model.hpp"
 
-namespace OFF {
+namespace model {
 
   veclist read(std::string fileName) {
     std::ifstream ifs(fileName.c_str());
@@ -93,27 +93,22 @@ namespace OFF {
   }
 
   veclist normalize(veclist vertices) {
-    float minX, maxX, minY, maxY, minZ, maxZ;
-
     veclist result = veclist();
+    float maxLength = 0;
 
-    minX = minY = minZ = std::numeric_limits<float>::max();
-    maxX = maxY = maxZ = std::numeric_limits<float>::min();
     for(veclist::iterator it = vertices.begin(); it != vertices.end(); ++it) {
       vec3 v = *it;
-      minX = minX < v.x? minX : v.x;
-      minY = minY < v.y? minY : v.y;
-      minZ = minZ < v.z? minZ : v.z;
-      maxX = maxX > v.x? maxX : v.x;
-      maxY = maxY > v.y? maxY : v.y;
-      maxZ = maxZ > v.z? maxZ : v.z;
+      float l = v.length();
+      if(l > maxLength) {
+        maxLength = l;
+      }
     }
 
     for(veclist::iterator it = vertices.begin(); it != vertices.end(); ++it) {
       vec3 v = *it;
       //TODO: normalize
       //TODO: Revamp completely, [v,v,v,normal,...] ?
-      result.push_back(v);
+      result.push_back(v * (1/maxLength));
     }
 
     return result;
