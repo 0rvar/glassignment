@@ -90,26 +90,26 @@ void idle() {
   //guiMainIteration();
 
   if(state.heldkeys.a) {
-    cam.Strafe(CAMERA_SPEED);
+    cam.Strafe(-CAMERA_SPEED);
     state.shouldUpdate = true;
   } else if(state.heldkeys.d) {
-    cam.Strafe(-CAMERA_SPEED);
+    cam.Strafe(CAMERA_SPEED);
     state.shouldUpdate = true;
   }
 
   if(state.heldkeys.w) {
-    cam.Drive(CAMERA_SPEED);
+    cam.Drive(-CAMERA_SPEED);
     state.shouldUpdate = true;
   } else if(state.heldkeys.s) {
-    cam.Drive(-CAMERA_SPEED);
+    cam.Drive(CAMERA_SPEED);
     state.shouldUpdate = true;
   }
 
   if(state.heldkeys.q) {
-    cam.Elevate(CAMERA_SPEED);
+    cam.Elevate(-CAMERA_SPEED);
     state.shouldUpdate = true;
   } else if(state.heldkeys.e) {
-    cam.Elevate(-CAMERA_SPEED);
+    cam.Elevate(CAMERA_SPEED);
     state.shouldUpdate = true;
   }
   
@@ -120,8 +120,6 @@ void idle() {
   state.mouse.vertical_rotation = std::max(float(-PI/2.0), std::min(float(PI/2.0), state.mouse.vertical_rotation));
   cam.SetAngles(state.mouse.horizontal_rotation, state.mouse.vertical_rotation);
   
-  std::cout << "idle()" << std::endl;
-  
   transform = mat4::Identity()
     .RotateX(state.transform.ax)
     .RotateY(state.transform.ay)
@@ -129,9 +127,6 @@ void idle() {
     .Scale(state.transform.s)
     .Translate(state.transform.dx, state.transform.dy, 0);
 
-  std::cout << transform << std::endl;
-  std::cout << cam << std::endl;
-  
   state.shouldUpdate = false;
 
   glutPostRedisplay();
@@ -335,6 +330,29 @@ void setPerspective(const float &far, const float &near, const float &fov) {
  * Y8a     a8P 88               88      Y8a.    .a8P 88           
  *  "Y88888P"  88888888888      88       `"Y8888Y"'  88   
  */ 
+void updateLights() {
+  // Ambient light
+  float As[4] = {0.1f, 0.1f, 0.1f, 1.0f };
+  glLightModelfv( GL_LIGHT_MODEL_AMBIENT, As );
+
+  // Light 0
+  float Al[4] = {0.0f, 0.0f, 0.0f, 1.0f };
+  glLightfv( GL_LIGHT0, GL_AMBIENT, Al ); 
+  float Dl[4] = {1.0f, 1.0f, 1.0f, 1.0f };
+  glLightfv( GL_LIGHT0, GL_DIFFUSE, Dl ); 
+  float Sl[4] = {1.0f, 1.0f, 1.0f, 1.0f };
+  glLightfv( GL_LIGHT0, GL_SPECULAR, Sl );  
+
+  // Material
+  float Am[4] = {0.3f, 0.3f, 0.3f, 1.0f };
+  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, Am );
+  float Dm[4] = {0.9f, 0.5f, 0.5f, 1.0f };
+  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, Dm );
+  float Sm[4] = {0.6f, 0.6f, 0.6f, 1.0f };
+  glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, Sm );
+  float f = 60.0f;
+  glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, f );
+}
 
 void initGlut(int argc, char **argv) {
   /* Initialize glut */
@@ -342,7 +360,7 @@ void initGlut(int argc, char **argv) {
 
   /* Display Mode 
       GLUT_DOUBLE together with glutSwapBuffers(); for double buffering */
-  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
+  glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
   /* Window Size */
   glutInitWindowSize(300, 300);
   glutInitContextProfile( GLUT_CORE_PROFILE );
@@ -408,6 +426,7 @@ void initGL(void) {
   glClearColor(0.0, 0.0, 0.0, 0.0);
 
   glEnable(GL_CULL_FACE);
+  glEnable(GL_DEPTH_TEST);
 }
 
 int main(int argc, char *argv[]) {
@@ -437,6 +456,7 @@ int main(int argc, char *argv[]) {
   state.window_height = glutGet(GLUT_WINDOW_HEIGHT);
 
   setPerspective(100, 0.1, 70);
+  updateLights();
   state.shouldUpdate = true;
 
   /* Loop for an infinitesimal while */

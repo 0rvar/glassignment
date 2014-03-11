@@ -134,10 +134,10 @@ TEST_CASE( "M * v", "[mat4, vec3]" ) {
   /* | 0  1  2  3  |   | 1 |
    * | 4  5  6  7  | x | 2 |
    * | 8  9  10 11 |   | 3 |
-   * | 12 13 14 15 |   | 0 |
+   * | 12 13 14 15 |   | 1 |
    */
   vec3 res = M * v;
-  CHECK( res.x == 8.0 );
-  CHECK( res.y == 32.0 );
-  CHECK( res.z == 56.0 );
+  CHECK( res.x == 11.0 );
+  CHECK( res.y == 39.0 );
+  CHECK( res.z == 67.0 );
 }

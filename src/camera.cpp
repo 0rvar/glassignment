@@ -33,7 +33,7 @@ void camera::MoveTo(vec3 p0, vec3 pref, vec3 up) {
   M[15] = 1;
   mat4 M_inv = M.Transpose();
 
-  mat4 T      = mat4::Identity().Translate(vec3() - p0);
+  mat4 T      = mat4::Identity().Translate(vec3(0, 0, 0) - p0);
   mat4 T_inv  = mat4::Identity().Translate(p0);
 
   // Create new view and create inverse view for 
@@ -52,41 +52,38 @@ mat4* camera::GetView() {
 }
 
 void camera::Strafe(float delta) {
-  vec3 vdelta = (cached_p0 - cached_pref).cross(cached_up).normalize() * delta;
-  vec3 p0   =  cached_p0 + vdelta;
-  vec3 pref =  cached_pref + vdelta;
-  // vec3 p0 = view_inverse * vec3(delta, 0, 0);
-  // vec3 pref = view_inverse * vec3(delta, 0, -1);
+  vec3 p0   = view_inverse * vec3(delta, 0, 0);
+  vec3 pref = view_inverse * vec3(delta, 0, -1);
   MoveTo(p0, pref, cached_up);
 }
 
 void camera::Drive(float delta) {
-  vec3 vdelta = (cached_pref - cached_p0).normalize() * delta;
-  vec3 p0   = cached_p0 + vdelta;
-  vec3 pref = cached_pref + vdelta;
+  vec3 p0   = view_inverse * vec3(0, 0, delta);
+  vec3 pref = view_inverse * vec3(0, 0, delta-1);
   MoveTo(p0, pref, cached_up);
 }
 
 void camera::Elevate(float delta) {
-  vec3 vdelta = cached_up.normalize() * delta;
-  vec3 p0   = cached_p0 + vdelta;
-  vec3 pref = cached_pref + vdelta;
+  vec3 p0   = view_inverse * vec3(0, delta, 0);
+  vec3 pref = view_inverse * vec3(0, delta, -1);
   MoveTo(p0, pref, cached_up);
 }
 
 void camera::RotateY(float alpha) {
-  vec3 pref = cached_p0 + mat4::Identity().RotateY(alpha) * (cached_pref - cached_p0);
+  vec3 pref = view_inverse * mat4::Identity().RotateY(alpha) * vec3(0, 0, -1);
   MoveTo(cached_p0, pref, cached_up);
 }
 
 void camera::RotateX(float alpha) {
-  vec3 pref = cached_p0 + mat4::Identity().RotateX(alpha) * (cached_pref - cached_p0);
+  vec3 pref = view_inverse * mat4::Identity().RotateX(alpha) * vec3(0, 0, -1);
   MoveTo(cached_p0, pref, cached_up);
 }
 
 void camera::SetAngles(float horizontal_angle, float vertical_angle) {
-  mat4 rotate = mat4::Identity().RotateY(horizontal_angle).RotateX(vertical_angle);
-  vec3 pref = cached_p0 + rotate * vec3(0, 0, -1);
+  vec3 pref = cached_p0 + vec3(0, 0, -1);
+  MoveTo(cached_p0, pref, cached_up);
+  mat4 rotate = mat4::Identity().RotateY(-horizontal_angle).RotateX(vertical_angle);
+  pref = view_inverse * rotate * vec3(0, 0, -1);
   MoveTo(cached_p0, pref, cached_up);
 }
 
@@ -101,5 +98,5 @@ void camera::stream(std::ostream &strm) {
         << "\tp0:   " << cached_p0   << std::endl
         << "\tpref: " << cached_pref << std::endl
         << "\tup:   " << cached_up   << std::endl;
-  strm << view;
+  strm << "view_" << view;
 }

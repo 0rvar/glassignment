@@ -23,7 +23,7 @@
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
 #define CAMERA_SPEED 0.03
-#define MOUSE_SENSITIVITY 0.003
+#define MOUSE_SENSITIVITY 0.005
 
 typedef struct S {
   bool shouldUpdate;

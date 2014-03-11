@@ -79,14 +79,17 @@ vec3 mat4::operator*(const vec3& other) {
   result.x += mat[0*4 + 0] * other.x;
   result.x += mat[0*4 + 1] * other.y;
   result.x += mat[0*4 + 2] * other.z;
+  result.x += mat[0*4 + 3] * 1;
 
   result.y += mat[1*4 + 0] * other.x;
   result.y += mat[1*4 + 1] * other.y;
   result.y += mat[1*4 + 2] * other.z;
+  result.y += mat[1*4 + 3] * 1;
 
   result.z += mat[2*4 + 0] * other.x;
   result.z += mat[2*4 + 1] * other.y;
   result.z += mat[2*4 + 2] * other.z;
+  result.z += mat[2*4 + 3] * 1;
 
   return result;
 }
