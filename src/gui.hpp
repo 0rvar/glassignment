@@ -22,4 +22,4 @@ extern void guiInit(int *, char**);
 extern void guiMainIteration(void);
 
 
-#endif  /* MATRIX_HPP */
+#endif  /* GUI_HPP */

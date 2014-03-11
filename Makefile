@@ -23,7 +23,7 @@ main: $(OBJECTS) build/main.o
 	$(CXX) $(OBJECTS) build/main.o -o $@ $(LDFLAGS)
 
 # Build objects
-build/%.o: src/%.cpp
+build/%.o: src/%.cpp src/%.hpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@ 
 
 

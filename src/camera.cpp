@@ -1,3 +1,4 @@
+#include <iostream>
 #include <iomanip>
 
 #include "camera.hpp"
@@ -51,9 +52,11 @@ mat4* camera::GetView() {
 }
 
 void camera::Strafe(float delta) {
-  vec3 vdelta = cached_p0.cross(cached_up).normalize() * delta;
+  vec3 vdelta = (cached_p0 - cached_pref).cross(cached_up).normalize() * delta;
   vec3 p0   =  cached_p0 + vdelta;
   vec3 pref =  cached_pref + vdelta;
+  // vec3 p0 = view_inverse * vec3(delta, 0, 0);
+  // vec3 pref = view_inverse * vec3(delta, 0, -1);
   MoveTo(p0, pref, cached_up);
 }
 
@@ -72,9 +75,18 @@ void camera::Elevate(float delta) {
 }
 
 void camera::RotateY(float alpha) {
-  vec3 pref = view_inverse 
-      * mat4::Identity().RotateY(alpha) 
-      * vec3(0, 0, -1);
+  vec3 pref = cached_p0 + mat4::Identity().RotateY(alpha) * (cached_pref - cached_p0);
+  MoveTo(cached_p0, pref, cached_up);
+}
+
+void camera::RotateX(float alpha) {
+  vec3 pref = cached_p0 + mat4::Identity().RotateX(alpha) * (cached_pref - cached_p0);
+  MoveTo(cached_p0, pref, cached_up);
+}
+
+void camera::SetAngles(float horizontal_angle, float vertical_angle) {
+  mat4 rotate = mat4::Identity().RotateY(horizontal_angle).RotateX(vertical_angle);
+  vec3 pref = cached_p0 + rotate * vec3(0, 0, -1);
   MoveTo(cached_p0, pref, cached_up);
 }
 

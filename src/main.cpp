@@ -1,69 +1,14 @@
-#include <GL/glew.h>
-#include <GL/freeglut.h>
-
-#include <iostream>
-#include <string>
-#include <vector>
-#include <algorithm>
-#include <gtk/gtk.h>
-#include <cmath>
-
-#include "geometry.hpp"
-#include "model.hpp"
-#include "shadertools.hpp"
-#include "camera.hpp"
-
-#include "timer.hpp"
-
-void loadVertices(std::vector<vec3>);
-void idle();
-void onKeyDown(unsigned char, int, int);
-void onSpecialDown(int, int, int);
-void renderScene();
-void loadVertices(std::vector<vec3>);
-void initGlut(int, char**);
-void initGL();
-void reshape(int width, int height);
-
-void initGuiWindow(const char*);
-void guiInit(int *, char**);
-void guiMainIteration(void);
-void gui_atclose();
-
-void setOrthographic();
-void setOblique();
-void setPerspective(const float &far, const float &near, const float &fov);
-#define PI 3.141592f
-#define BUFFER_OFFSET(i) ((char *)NULL + (i))
-
-#define STATE_IDLE 0
-#define STATE_OPEN 1
-#define STATE_TRANSLATE 2
-#define STATE_SCALE 3
-#define STATE_ROTATE 4
-#define SUBSTATE_TRANSLATE_X 0
-#define SUBSTATE_TRANSLATE_Y 1
-typedef struct S {
-  bool shouldUpdate;
-  float dx, dy, s, ax, ay, az;
-  int current, sub;
-  S() : shouldUpdate(false),dx(0),dy(0),s(1),ax(0),ay(0),az(0),current(0),sub(0) {}
-} ControlState;
-ControlState state;
-
-GLuint    idTransMat;
-GLuint    idViewMat;
-GLuint    idProjMat;
-
-uint      vertexCount = 0;
-vec3      p0 = vec3(2, 0, 2);
-vec3      pref = vec3(0, 0, 0);
-vec3      up = vec3(0, 1, 0);
-
-camera    cam = camera(p0, pref, up);
-mat4      transform = mat4::Identity();
-mat4      projection = mat4::Identity();
-
+#include "main.hpp"
+/*
+ * 88888888ba  88888888888 888b      88 88888888ba,   88888888888 88888888ba   
+ * 88      "8b 88          8888b     88 88      `"8b  88          88      "8b  
+ * 88      ,8P 88          88 `8b    88 88        `8b 88          88      ,8P  
+ * 88aaaaaa8P' 88aaaaa     88  `8b   88 88         88 88aaaaa     88aaaaaa8P'  
+ * 88""""88'   88"""""     88   `8b  88 88         88 88"""""     88""""88'    
+ * 88    `8b   88          88    `8b 88 88         8P 88          88    `8b    
+ * 88     `8b  88          88     `8888 88      .a8P  88          88     `8b   
+ * 88      `8b 88888888888 88      `888 88888888Y"'   88888888888 88      `8b 
+ */
 #define glsl(x) "#version 140\n" #x
 const char* const vertex_shader = glsl(
   in vec3 vPosition;
@@ -99,7 +44,7 @@ void renderScene() {
   glutSwapBuffers();
 }
 
-void loadVertices(std::vector<vec3> vertices) {
+void loadModel(std::vector<vec3> vertices) {
   vec3 buf[vertices.size()];
   for(uint i = 0; i < vertices.size(); i++) {
     buf[i] = vertices[i];
@@ -110,21 +55,59 @@ void loadVertices(std::vector<vec3> vertices) {
   glBufferData(GL_ARRAY_BUFFER, sizeof(buf), buf, GL_STATIC_DRAW );
 }
 
+
+/*
+ * 88  88888888ba,    88           88888888888  
+ * 88  88      `"8b   88           88           
+ * 88  88        `8b  88           88           
+ * 88  88         88  88           88aaaaa      
+ * 88  88         88  88           88"""""      
+ * 88  88         8P  88           88           
+ * 88  88      .a8P   88           88           
+ * 88  88888888Y"'    88888888888  88888888888  
+ */
 void idle() {
   //guiMainIteration();
+
+  if(state.heldkeys.a) {
+    cam.Strafe(CAMERA_SPEED);
+    state.shouldUpdate = true;
+  } else if(state.heldkeys.d) {
+    cam.Strafe(-CAMERA_SPEED);
+    state.shouldUpdate = true;
+  }
+
+  if(state.heldkeys.w) {
+    cam.Drive(CAMERA_SPEED);
+    state.shouldUpdate = true;
+  } else if(state.heldkeys.s) {
+    cam.Drive(-CAMERA_SPEED);
+    state.shouldUpdate = true;
+  }
+
+  if(state.heldkeys.q) {
+    cam.Elevate(CAMERA_SPEED);
+    state.shouldUpdate = true;
+  } else if(state.heldkeys.e) {
+    cam.Elevate(-CAMERA_SPEED);
+    state.shouldUpdate = true;
+  }
   
   if(!state.shouldUpdate) {
     return;
   }
 
+  state.mouse.vertical_rotation = std::max(float(-PI/2.0), std::min(float(PI/2.0), state.mouse.vertical_rotation));
+  cam.SetAngles(state.mouse.horizontal_rotation, state.mouse.vertical_rotation);
+  
   std::cout << "idle()" << std::endl;
   
   transform = mat4::Identity()
-    .RotateX(state.ax)
-    .RotateY(state.ay)
-    .RotateZ(state.az)
-    .Scale(state.s)
-    .Translate(state.dx, state.dy, 0);
+    .RotateX(state.transform.ax)
+    .RotateY(state.transform.ay)
+    .RotateZ(state.transform.az)
+    .Scale(state.transform.s)
+    .Translate(state.transform.dx, state.transform.dy, 0);
 
   std::cout << transform << std::endl;
   std::cout << cam << std::endl;
@@ -133,6 +116,205 @@ void idle() {
 
   glutPostRedisplay();
 }
+
+/*
+ *   ,ad8888ba,   88888888ba    ad88888ba   
+ *  d8"'    `"8b  88      "8b  d8"     "8b  
+ * d8'            88      ,8P  Y8,          
+ * 88             88aaaaaa8P'  `Y8aaaaa,    
+ * 88             88""""""8b,    `"""""8b,  
+ * Y8,            88      `8b          `8b  
+ *  Y8a.    .a8P  88      a8P  Y8a     a8P  
+ *   `"Y8888Y"'   88888888P"    "Y88888P"   
+ */
+void onPassiveMouseMove(int x, int y) {
+  state.mouse.last_x = x;
+  state.mouse.last_y = y;
+  glutSetCursor(GLUT_CURSOR_INHERIT);
+}
+
+void onMouseMove(int x, int y) {
+  state.mouse.horizontal_rotation += float(-state.mouse.last_x + x) * MOUSE_SENSITIVITY;
+  state.mouse.vertical_rotation   += float( state.mouse.last_y - y) * MOUSE_SENSITIVITY;
+
+  glutWarpPointer(state.window_width/2, state.window_height/2);
+  state.mouse.last_x = state.window_width/2;
+  state.mouse.last_y = state.window_height/2;
+
+  state.shouldUpdate = true;
+  glutSetCursor(GLUT_CURSOR_NONE);
+}
+
+void reshape(int width, int height) {
+  int size = std::min(width, height);
+  int x_off = (width-size)/2;
+  int y_off = (height-size)/2;
+  glViewport(x_off, y_off, size, size);
+  state.window_width = width;
+  state.window_height = height;
+}
+
+void onKeyDown(unsigned char key, int x, int y){
+  if(key == 'w') {
+    state.heldkeys.w = true;
+  }
+  if(key == 'a') {
+    state.heldkeys.a = true;
+  }
+  if(key == 's') {
+    state.heldkeys.s = true;
+  }
+  if(key == 'd') {
+    state.heldkeys.d = true;
+  }
+  if(key == 'q') {
+    state.heldkeys.q = true;
+  }
+  if(key == 'e') {
+    state.heldkeys.e = true;
+  }
+}
+
+void onKeyUp(unsigned char key, int x, int y) {
+  if(key == 'w') {
+    state.heldkeys.w = false;
+  }
+  if(key == 'a') {
+    state.heldkeys.a = false;
+  }
+  if(key == 's') {
+    state.heldkeys.s = false;
+  }
+  if(key == 'd') {
+    state.heldkeys.d = false;
+  }
+  if(key == 'q') {
+    state.heldkeys.q = false;
+  }
+  if(key == 'e') {
+    state.heldkeys.e = false;
+  }
+}
+
+void onSpecialDown(int key, int x, int y) {
+  int mod = glutGetModifiers();
+
+  if(mod & GLUT_ACTIVE_CTRL) {
+    switch(key) {
+    case GLUT_KEY_UP:
+      state.transform.ax += 3.141592/36;
+      break;
+    case GLUT_KEY_DOWN:
+      state.transform.ax += 3.141592/36;
+      break;
+    case GLUT_KEY_RIGHT:
+      state.transform.ay -= 3.141592/36;
+      break;
+    case GLUT_KEY_LEFT:
+      state.transform.ay += 3.141592/36;
+      break;
+    default:
+      return;
+    }
+  } else if(mod & GLUT_ACTIVE_SHIFT) {
+    switch(key) {
+    case GLUT_KEY_UP:
+      state.transform.s += 0.1;
+      break;
+    case GLUT_KEY_DOWN:
+      state.transform.s -= 0.1;
+      break;
+    case GLUT_KEY_RIGHT:
+      state.transform.az -= 3.141592/36;
+      break;
+    case GLUT_KEY_LEFT:
+      state.transform.az += 3.141592/36;
+      break;
+    default:
+      return;
+    }
+  } else {
+    switch(key) {
+    case GLUT_KEY_UP:
+      state.transform.dy += 0.1;
+      break;
+    case GLUT_KEY_DOWN:
+      state.transform.dy -= 0.1;
+      break;
+    case GLUT_KEY_RIGHT:
+      state.transform.dx += 0.1;
+      break;
+    case GLUT_KEY_LEFT:
+      state.transform.dx -= 0.1;
+      break;
+    default:
+      return;
+    }
+  }
+
+  state.shouldUpdate = true;
+}
+
+/*
+ * 88        88  888888888888  88  88           
+ * 88        88       88       88  88           
+ * 88        88       88       88  88           
+ * 88        88       88       88  88           
+ * 88        88       88       88  88           
+ * 88        88       88       88  88           
+ * Y8a.    .a8P       88       88  88           
+ *  `"Y8888Y"'        88       88  88888888888  
+ */
+
+void setOrthographic() {
+  float left,right,top,bottom,far,near;
+  right = top = near = 5;
+  left = bottom = far = -5;
+
+  mat4 ST = mat4::Identity()
+      .Translate(-(left+right)/(right-left), -(top+bottom)/(top-bottom), -(far+near)/(far-near))
+      .Scale(2.0f/(right-left), 2.0f/(top-bottom), 2.0f/(far-near));
+
+  projection = ST;
+}
+
+void setOblique() {
+  float theta, psi;
+  theta = psi = PI/4;
+
+  mat4 H = mat4::Identity();
+  H[2] = cos(theta)/sin(theta);
+  H[6] = cos(psi)/sin(psi);
+
+  setOrthographic();
+  projection = projection * H;
+}
+
+void setPerspective(const float &far, const float &near, const float &fov) {
+  mat4 P;
+
+  float scale = 1.0/tan(fov / 360.0 * PI);
+
+  P[0*4 + 0] = scale;
+  P[1*4 + 1] = scale;
+  P[2*4 + 2] = - far / (far - near);
+  P[2*4 + 3] = - far * near / (far - near);
+  P[3*4 + 2] = - 1;
+  P[3*4 + 3] = 0;
+
+  projection = P;
+}
+
+/*
+ *  ad88888ba  88888888888 888888888888 88        88 88888888ba   
+ * d8"     "8b 88               88      88        88 88      "8b  
+ * Y8,         88               88      88        88 88      ,8P  
+ * `Y8aaaaa,   88aaaaa          88      88        88 88aaaaaa8P'  
+ *   `"""""8b, 88"""""          88      88        88 88""""""'    
+ *         `8b 88               88      88        88 88           
+ * Y8a     a8P 88               88      Y8a.    .a8P 88           
+ *  "Y88888P"  88888888888      88       `"Y8888Y"'  88   
+ */ 
 
 void initGlut(int argc, char **argv) {
   /* Initialize glut */
@@ -207,163 +389,30 @@ int main(int argc, char *argv[]) {
 
   glutDisplayFunc(renderScene);
   glutIdleFunc(idle);
-  glutKeyboardFunc(onKeyDown); //glutKeyboardUpFunc(onKeyUp);
+  glutKeyboardFunc(onKeyDown);
+  glutKeyboardUpFunc(onKeyUp);
   glutSpecialFunc(onSpecialDown);
-  glutReshapeFunc(reshape);
+  glutReshapeFunc(reshape); 
+  glutMotionFunc(onMouseMove);
+  glutPassiveMotionFunc(onPassiveMouseMove);
 
   if(argc > 1) {
     try {
       std::vector<vec3> vertices = model::read(argv[1]);
-      loadVertices(vertices);
+      loadModel(vertices);
     } catch(model::ParseException &e) {
       std::cerr << "Invalid OFF-file: \"" << e.what() << "\" on line " << e.line << std::endl;
     }
   }
 
-  /* Initialize GUI */
-  //guiInit(&argc, argv);
-  //initGuiWindow("ass2gui.glade");
+  state.window_width  = glutGet(GLUT_WINDOW_WIDTH);
+  state.window_height = glutGet(GLUT_WINDOW_HEIGHT);
 
-  /* Set up exit function */
-  //atexit(&gui_atclose);
-
-  setPerspective(100, 0.1, 90);
-  //setPerspective();
+  setPerspective(100, 0.1, 70);
   state.shouldUpdate = true;
 
-  /* Loop for a short while */
+  /* Loop for an infinitesimal while */
   glutMainLoop();
 
   return 0;
-}
-
-
-void reshape(int width, int height) {
-  int size = std::min(width, height);
-  int x_off = (width-size)/2;
-  int y_off = (height-size)/2;
-  glViewport(x_off, y_off, size, size);
-}
-
-void onKeyDown(unsigned char key, int x, int y){
-  if(key == 'a') {
-    cam.Strafe(0.1);
-  } else if(key == 'd') {
-    cam.Strafe(-0.1);
-  }
-
-  if(key == 'w') {
-    cam.Drive(0.1);
-  } else if(key == 's') {
-    cam.Drive(-0.1);
-  }
-
-  if(key == 'q') {
-    cam.Elevate(0.1);
-  } else if(key == 'e') {
-    cam.Elevate(-0.1);
-  }
-  
-  state.shouldUpdate = true;
-}
-
-void onSpecialDown(int key, int x, int y) {
-  int mod = glutGetModifiers();
-
-  if(mod & GLUT_ACTIVE_CTRL) {
-    switch(key) {
-    case GLUT_KEY_UP:
-      state.ax += 3.141592/36;
-      break;
-    case GLUT_KEY_DOWN:
-      state.ax += 3.141592/36;
-      break;
-    case GLUT_KEY_RIGHT:
-      state.ay -= 3.141592/36;
-      break;
-    case GLUT_KEY_LEFT:
-      state.ay += 3.141592/36;
-      break;
-    default:
-      return;
-    }
-  } else if(mod & GLUT_ACTIVE_SHIFT) {
-    switch(key) {
-    case GLUT_KEY_UP:
-      state.s += 0.1;
-      break;
-    case GLUT_KEY_DOWN:
-      state.s -= 0.1;
-      break;
-    case GLUT_KEY_RIGHT:
-      state.az -= 3.141592/36;
-      break;
-    case GLUT_KEY_LEFT:
-      state.az += 3.141592/36;
-      break;
-    default:
-      return;
-    }
-  } else {
-    switch(key) {
-    case GLUT_KEY_UP:
-      state.dy += 0.1;
-      break;
-    case GLUT_KEY_DOWN:
-      state.dy -= 0.1;
-      break;
-    case GLUT_KEY_RIGHT:
-      state.dx += 0.1;
-      break;
-    case GLUT_KEY_LEFT:
-      state.dx -= 0.1;
-      break;
-    default:
-      return;
-    }
-  }
-
-  state.shouldUpdate = true;
-}
-
-void setOrthographic() {
-  float left,right,top,bottom,far,near;
-  right = top = near = 5;
-  left = bottom = far = -5;
-
-  mat4 ST = mat4::Identity()
-      .Translate(-(left+right)/(right-left), -(top+bottom)/(top-bottom), -(far+near)/(far-near))
-      .Scale(2.0f/(right-left), 2.0f/(top-bottom), 2.0f/(far-near));
-
-  projection = ST;
-}
-
-void setOblique() {
-  float theta, psi;
-  theta = psi = PI/4;
-
-  mat4 H = mat4::Identity();
-  H[2] = cos(theta)/sin(theta);
-  H[6] = cos(psi)/sin(psi);
-
-  setOrthographic();
-  projection = projection * H;
-}
-
-void setPerspective(const float &far, const float &near, const float &fov) {
-  float scale = 1.0/tan(fov / 360.0 * PI);
-  mat4 P;
-  P[0*4 + 0] = scale;
-  P[1*4 + 1] = scale;
-  P[2*4 + 2] = - far / (far - near);
-  P[2*4 + 3] = - far * near / (far - near);
-  P[3*4 + 2] = - 1;
-  P[3*4 + 3] = 0;
-
-  projection = P;
-}
-
-
-void gui_atclose() {
-  std::cout << "Wut";
 }

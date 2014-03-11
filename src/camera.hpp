@@ -25,6 +25,7 @@ public:
   void RotateX(float alpha);
   void RotateY(float alpha);
   void RotateZ(float alpha);
+  void SetAngles(float horizontal_angle, float vertical_angle);
 
   void stream(std::ostream &strm);
 };

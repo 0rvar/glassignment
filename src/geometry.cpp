@@ -34,6 +34,14 @@ vec3 vec3::cross(vec3 b) {
   return r;
 }
 
+float vec3::dot(const vec3 &b) {
+  float r;
+  vec3 a = (*this);
+  r = a.x * b.x + a.y * b.y + a.z * b.z;
+  return r;
+}
+
+
 vec3 vec3::normalize() {
   return (*this) * (1.0f/this->length());
 }
