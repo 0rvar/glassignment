@@ -1,4 +1,5 @@
 #include "main.hpp"
+
 /*
  * 88888888ba  88888888888 888b      88 88888888ba,   88888888888 88888888ba   
  * 88      "8b 88          8888b     88 88      `"8b  88          88      "8b  
@@ -12,6 +13,7 @@
 #define glsl(x) "#version 140\n" #x
 const char* const vertex_shader = glsl(
   in vec3 vPosition;
+  in vec3 vNormal;
 
   uniform mat4 P;
   uniform mat4 T;
@@ -38,21 +40,39 @@ void renderScene() {
   glUniformMatrix4fv(idProjMat, 1, GL_TRUE,
             (const float*)&projection);
 
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  // glDrawArrays(GL_LINE_LOOP, 0, vertexCount);
-  glDrawArrays(GL_TRIANGLES, 0, vertexCount);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  
+  glDrawElements(GL_TRIANGLES, state.render.num_indices, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
   glutSwapBuffers();
 }
 
-void loadModel(std::vector<vec3> vertices) {
-  vec3 buf[vertices.size()];
-  for(uint i = 0; i < vertices.size(); i++) {
-    buf[i] = vertices[i];
+void loadModel(model::data m) {
+  state.render.num_indices = m.indices.size();
+  uint num_v = m.vertices.size();
+  vec3 vert_buf[m.vertices.size()];
+  for(uint i = 0; i < m.vertices.size(); i++) {
+    vert_buf[i] = m.vertices[i];
   }
-  vertexCount = vertices.size();
+  vec3 norm_buf[m.normals.size()];
+  for(uint i = 0; i < m.normals.size(); i++) {
+    norm_buf[i] = m.normals[i];
+  }
+  uint ind_buf[m.indices.size()];
+  for(uint i = 0; i < m.indices.size(); i++) {
+    ind_buf[i] = m.indices[i];
+  }
 
   /* Load it to the buffer data array */
-  glBufferData(GL_ARRAY_BUFFER, sizeof(buf), buf, GL_STATIC_DRAW );
+  // glBufferData(GL_ARRAY_BUFFER, sizeof(buf), buf, GL_STATIC_DRAW );
+
+  glBufferSubData( GL_ARRAY_BUFFER, 0, num_v*sizeof(vec3), vert_buf );
+  glBufferSubData( GL_ARRAY_BUFFER, num_v*sizeof(vec3), num_v*sizeof(vec3), norm_buf );
+
+  /* Load indices to index array */
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, state.render.num_indices*sizeof(uint),
+                 ind_buf, GL_STATIC_DRAW);    
+
+  glVertexAttribPointer(locPosition, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)BUFFER_OFFSET(0));
+  glVertexAttribPointer(locNormal,   3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)BUFFER_OFFSET(num_v*sizeof(vec3)));
 }
 
 
@@ -338,7 +358,7 @@ void initGlut(int argc, char **argv) {
 void initGL(void) {
   GLuint program;
   GLuint buffer;
-  GLuint loc;
+  GLuint indexBuffer;
   GLuint vao;
 
   /* Setting up GL Extensions */
@@ -356,14 +376,22 @@ void initGL(void) {
   glBindVertexArray(vao);
   
   /* Create buffer in the shared display list space and 
-     bind it as GL_ARRAY_BUFFER */
+       bind it as GL_ARRAY_BUFFER */
   glGenBuffers( 1, &buffer);
   glBindBuffer( GL_ARRAY_BUFFER, buffer);
+  glBufferData( GL_ARRAY_BUFFER, BUFFER_SIZE*sizeof(vec3)+BUFFER_SIZE*sizeof(vec3), NULL, GL_STATIC_DRAW);
+    
+  /* Create buffer in the shared display list space and 
+       bind it as GL_ELEMENT_ARRAY_BUFFER */
+  glGenBuffers( 1, &indexBuffer);
+  glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
   
   /* Initialize attribute vPosition in program */
-  loc = glGetAttribLocation( program, "vPosition");
-  glEnableVertexAttribArray(loc);
-  glVertexAttribPointer(loc, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)BUFFER_OFFSET(0));
+  locPosition = glGetAttribLocation( program, "vPosition");
+  glEnableVertexAttribArray(locPosition);
+
+  locNormal = glGetAttribLocation(program, "vNormal");
+  glEnableVertexAttribArray(locNormal);
 
   // normal = glGetAttribLocation( program, "vNormal");
   // glEnableVertexAttribArray(normal);
@@ -398,8 +426,8 @@ int main(int argc, char *argv[]) {
 
   if(argc > 1) {
     try {
-      std::vector<vec3> vertices = model::read(argv[1]);
-      loadModel(vertices);
+      model::data m = model::read(argv[1]);
+      loadModel(m);
     } catch(model::ParseException &e) {
       std::cerr << "Invalid OFF-file: \"" << e.what() << "\" on line " << e.line << std::endl;
     }

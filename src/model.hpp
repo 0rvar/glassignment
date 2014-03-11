@@ -11,13 +11,19 @@ namespace model {
   using veclist = std::vector<vec3>;
 
   typedef struct {
+    veclist vertices;
+    veclist normals;
+    std::vector<uint> indices;
+  } data;
+
+  typedef struct {
     int numVertices;
     int numFaces;
     int numEdges;
   } header;
 
-  veclist read(std::string fileName);
-  veclist parse(std::string content);
+  data read(std::string fileName);
+  data parse(std::string content);
   header parseHeader(std::string line);
   vec3 parseVertex(std::string line);
   std::vector<int> parseFace(std::string line);

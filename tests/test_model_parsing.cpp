@@ -40,9 +40,11 @@ TEST_CASE( "model vertex lines are parsed", "[model]" ) {
 
 TEST_CASE( "model is parsed", "[model]" ) {
   std::string content ("OFF\n8 6 24\n0 0 0\n0 0 1\n0 1 0\n0 1 1\n1 0 0\n1 0 1\n1 1 0\n1 1 1\n4 0 1 3 2\n4 2 3 7 6\n4 4 6 7 5\n4 0 4 5 1\n4 1 5 7 3\n4 0 2 6 4");
-  std::vector<vec3> result = model::parse(content);
+  model::data result = model::parse(content);
 
-  REQUIRE( result.size() == 12*3 );
+  REQUIRE( result.vertices.size() == 8 );
+  REQUIRE( result.normals.size() == result.vertices.size() );
+  REQUIRE( result.indices.size() == 6*2*3 );
 }
 
 TEST_CASE( "Invalid files are handled", "[model]" ) {

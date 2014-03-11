@@ -6,7 +6,7 @@ DFLAGS  = -O0 -g3 -ggdb3 -fno-inline
 #DFLAGS = -O2
 WFLAGS   = -Wall -ansi -g -std=c++11 -Isrc/
 GLFLAGS  = `pkg-config --cflags gtk+-2.0`
-LGLFLAGS = `pkg-config --libs gtk+-2.0` -lGL -lGLEW -lGLU -lglut
+LGLFLAGS = `pkg-config --libs gtk+-2.0` -lGL -lGLEW -lGLU -lglut -g
 CXXFLAGS = $(WFLAGS) $(DFLAGS) $(GLFLAGS)
 LDFLAGS  =  -export-dynamic -lXext -lX11 $(LGLFLAGS)
 

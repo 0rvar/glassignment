@@ -19,6 +19,7 @@
 #include "timer.hpp"
 
 #define PI 3.141592f
+#define BUFFER_SIZE 3000
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
 #define CAMERA_SPEED 0.03
@@ -44,15 +45,19 @@ typedef struct S {
     float horizontal_rotation, vertical_rotation;
   } mouse;
   int window_width, window_height;
+  struct render_ {
+    uint num_indices;
+  } render;
   S(): shouldUpdate(false), heldkeys({0}), mouse({0}) {};
 } ControlState;
 ControlState state;
 
+GLuint    locPosition;
+GLuint    locNormal;
 GLuint    idTransMat;
 GLuint    idViewMat;
 GLuint    idProjMat;
 
-uint      vertexCount = 0;
 vec3      p0 = vec3(0, 0, 3);
 vec3      pref = vec3(0, 0, 2);
 vec3      up = vec3(0, 1, 0);
@@ -62,7 +67,7 @@ mat4      transform = mat4::Identity();
 mat4      projection = mat4::Identity();
 
 void renderScene();
-void loadModel(std::vector<vec3> vertices);
+void loadModel(model::data m);
 void idle();
 
 void onMouseMove(int x, int y);

@@ -10,18 +10,24 @@
 
 namespace model {
 
-  veclist read(std::string fileName) {
+  data read(std::string fileName) {
     std::ifstream ifs(fileName.c_str());
     std::string content( (std::istreambuf_iterator<char>(ifs) ),
      (std::istreambuf_iterator<char>()) );
     return parse(content);
   }
 
-  veclist parse(std::string content) {
+  data parse(std::string content) {
     std::vector<std::string> lines; 
     veclist vertices;
     std::vector <std::vector<int> > faces;
-    veclist triangles;
+
+    veclist face_normals;
+    veclist vertex_normals;
+    std::vector<uint> indices;
+
+    // veclist triangles;
+    // veclist triangle_normals;
 
     std::istringstream split(content); 
     for(std::string each; std::getline(split, each, '\n'); lines.push_back(each)){};
@@ -41,21 +47,60 @@ namespace model {
       vertices.push_back(parseVertex(lines[i]));
     }
 
+    vertex_normals = veclist(h.numVertices);
+
+    // Parse faces, calculate face normals
     for(int i = 2 + h.numVertices; i < 2 + h.numVertices + h.numFaces; i++) {
-      faces.push_back(parseFace(lines[i]));
+      std::vector<int> face = parseFace(lines[i]);
+      faces.push_back(face);
+
+      vec3 v1 = vertices[face[1]] - vertices[face[0]];
+      vec3 v2 = vertices[face[2]] - vertices[face[0]];
+      face_normals.push_back(v1.cross(v2));
     }
 
-    // wow, such expressiveness
-    for(std::vector <std::vector<int> >::iterator it = faces.begin(); it != faces.end(); ++it) {
+    // A vertex normal is the average of all connected faces' normals,
+    //  so add them all up...
+    for(auto it = faces.begin(); it != faces.end(); ++it) {
       std::vector<int> face = *it;
-      for(uint i = 2; i < face.size(); i++) {
-        triangles.push_back(vertices[face[0]]);
-        triangles.push_back(vertices[face[i-1]]);
-        triangles.push_back(vertices[face[i]]);
+      int i = std::distance(faces.begin(), it);
+      vec3 face_normal = face_normals[i];
+      
+      for(auto it2 = face.begin(); it2 != face.end(); ++it2) {
+        int vertex_index = *it2;
+        vertex_normals[vertex_index] = vertex_normals[vertex_index] + face_normal;
       }
     }
+    // ... and then normalize
+    for(uint i = 0; i < vertex_normals.size(); ++i) {
+      vertex_normals[i] = vertex_normals[i].normalize();
+    }
 
-    return normalize(triangles);
+    // Generate triangle index array 
+    for(auto it = faces.begin(); it != faces.end(); ++it) {
+      std::vector<int> face = *it;
+
+      for(uint i = 2; i < face.size(); i++) {
+        indices.push_back(face[0]);
+        indices.push_back(face[i-1]);
+        indices.push_back(face[i]);
+      }
+
+      // for(uint i = 2; i < face.size(); i++) {
+      //   triangles.push_back(vertices[face[0]]);
+      //   triangles.push_back(vertices[face[i-1]]);
+      //   triangles.push_back(vertices[face[i]]);
+      //   triangle_normals.push_back(vertex_normals[face[0]]);
+      //   triangle_normals.push_back(vertex_normals[face[i-1]]);
+      //   triangle_normals.push_back(vertex_normals[face[i]]);
+      // }
+    }
+
+    data m;
+    m.vertices = normalize(vertices);
+    m.normals = vertex_normals;
+    m.indices = indices;
+    return m;
   }
 
   header parseHeader(std::string line) {
