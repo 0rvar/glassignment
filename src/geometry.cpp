@@ -146,7 +146,7 @@ mat4 mat4::RotateZ(float alpha) {
 mat4 mat4::RotateY(float alpha) {
   mat4 m = mat4::Identity();
   m[0]  = cos(alpha);
-  m[3]  = -sin(alpha);
+  m[2]  = -sin(alpha);
   m[8]  = sin(alpha);
   m[10] = cos(alpha);
   return m * *this;

@@ -25,13 +25,6 @@ public:
   vec4(float _x, float _y, float _z, float _w): x(_x), y(_y), z(_z), w(_w) {};
   vec4(float _x, float _y, float _z): x(_x), y(_y), z(_z), w(1) {};
 };
-class point4 {
-public:
-  float x, y, z, w;
-  point4(): x(0),y(0),z(0),w(0) {};
-  point4(float _x, float _y, float _z, float _w): x(_x), y(_y), z(_z), w(_w) {};
-  point4(float _x, float _y, float _z): x(_x), y(_y), z(_z), w(0) {};
-};
 
 class mat4 {
 public:

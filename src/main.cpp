@@ -12,23 +12,56 @@
  */
 #define glsl(x) "#version 140\n" #x
 const char* const vertex_shader = glsl(
-  in vec3 vPosition;
-  in vec3 vNormal;
+  in vec3 vert;
+  in vec3 vertNormal;
 
   uniform mat4 P;
-  uniform mat4 T;
   uniform mat4 V;
+  uniform mat4 model;
+
+  out vec3 fragVert;
+  out vec3 fragNormal;
 
   void main() {
-    gl_Position =  P*V*T*vec4(vPosition, 1.0);
+    gl_Position =  P*V* model * vec4(vert, 1.0);
+    fragVert = vert;
+    fragNormal = vertNormal;
   }
 );
 const char* const fragment_shader = glsl(
-  out vec4 fColor;
+  in vec3 fragVert;
+  in vec3 fragNormal;
+
+  uniform mat4 model;
+
+  out vec4 finalColor;
 
   void main() {
-    fColor = vec4( 0.804, 0.416, 0.667, 1.0 );
-    //fColor = vec4( 1.0, 0.0, 0.0, 1.0 );
+    vec3 light0_position = vec3(0, 2, 2);
+    vec4 light0_ambient  = vec4(0.1f, 0.1f, 0.1f, 1);
+    vec4 light0_specular = vec4(1f, 1f, 1f, 1);
+    vec4 light0_diffuse  = vec4(0.5f, 0.5f, 0.5f, 1);
+
+    mat3 normalMatrix = transpose(inverse(mat3(model)));
+    vec3 normal = normalize(normalMatrix * fragNormal);
+
+    //calculate the location of this fragment (pixel) in world coordinates
+    vec3 fragPosition = vec3(model * vec4(fragVert, 1));
+    
+    //calculate the vector from this pixels surface to the light source
+    vec3 surfaceToLight = light0_position - fragPosition;
+
+    //calculate the cosine of the angle of incidence (brightness)
+    float specular_intensity = dot(normal, surfaceToLight) / (length(surfaceToLight) * length(normal));
+    specular_intensity = clamp(specular_intensity, 0, 1);
+
+    //calculate final color of the pixel, based on:
+    // 1. The angle of incidence: specular
+    // 2. The color/intensities of the light: light.intensities
+    // 3. The texture and texture coord: texture(tex, fragTexCoord)
+    finalColor = specular_intensity * light0_specular;
+    //finalColor = vec4(1.0f, 1.0f, 1.0f, 1);
+    //finalColor = vec4(normal, 1);
   }
 );
 
@@ -217,16 +250,16 @@ void onSpecialDown(int key, int x, int y) {
   if(mod & GLUT_ACTIVE_CTRL) {
     switch(key) {
     case GLUT_KEY_UP:
-      state.transform.ax += 3.141592/36;
+      state.transform.ax -= PI/36;
       break;
     case GLUT_KEY_DOWN:
-      state.transform.ax += 3.141592/36;
+      state.transform.ax += PI/36;
       break;
     case GLUT_KEY_RIGHT:
-      state.transform.ay -= 3.141592/36;
+      state.transform.ay -= PI/36;
       break;
     case GLUT_KEY_LEFT:
-      state.transform.ay += 3.141592/36;
+      state.transform.ay += PI/36;
       break;
     default:
       return;
@@ -240,10 +273,10 @@ void onSpecialDown(int key, int x, int y) {
       state.transform.s -= 0.1;
       break;
     case GLUT_KEY_RIGHT:
-      state.transform.az -= 3.141592/36;
+      state.transform.az -= PI/36;
       break;
     case GLUT_KEY_LEFT:
-      state.transform.az += 3.141592/36;
+      state.transform.az += PI/36;
       break;
     default:
       return;
@@ -331,27 +364,7 @@ void setPerspective(const float &far, const float &near, const float &fov) {
  *  "Y88888P"  88888888888      88       `"Y8888Y"'  88   
  */ 
 void updateLights() {
-  // Ambient light
-  float As[4] = {0.1f, 0.1f, 0.1f, 1.0f };
-  glLightModelfv( GL_LIGHT_MODEL_AMBIENT, As );
-
-  // Light 0
-  float Al[4] = {0.0f, 0.0f, 0.0f, 1.0f };
-  glLightfv( GL_LIGHT0, GL_AMBIENT, Al ); 
-  float Dl[4] = {1.0f, 1.0f, 1.0f, 1.0f };
-  glLightfv( GL_LIGHT0, GL_DIFFUSE, Dl ); 
-  float Sl[4] = {1.0f, 1.0f, 1.0f, 1.0f };
-  glLightfv( GL_LIGHT0, GL_SPECULAR, Sl );  
-
-  // Material
-  float Am[4] = {0.3f, 0.3f, 0.3f, 1.0f };
-  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, Am );
-  float Dm[4] = {0.9f, 0.5f, 0.5f, 1.0f };
-  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, Dm );
-  float Sm[4] = {0.6f, 0.6f, 0.6f, 1.0f };
-  glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, Sm );
-  float f = 60.0f;
-  glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, f );
+  
 }
 
 void initGlut(int argc, char **argv) {
@@ -405,10 +418,10 @@ void initGL(void) {
   glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
   
   /* Initialize attribute vPosition in program */
-  locPosition = glGetAttribLocation( program, "vPosition");
+  locPosition = glGetAttribLocation( program, "vert");
   glEnableVertexAttribArray(locPosition);
 
-  locNormal = glGetAttribLocation(program, "vNormal");
+  locNormal = glGetAttribLocation(program, "vertNormal");
   glEnableVertexAttribArray(locNormal);
 
   // normal = glGetAttribLocation( program, "vNormal");
@@ -416,7 +429,7 @@ void initGL(void) {
   // glVertexAttribPointer(normal, 3, GL_FLOAT, GL_FALSE, 3, (GLvoid*)BUFFER_OFFSET(3));
 
 
-  idTransMat = glGetUniformLocation(program, "T");
+  idTransMat = glGetUniformLocation(program, "model");
   idViewMat  = glGetUniformLocation(program, "V");
   idProjMat  = glGetUniformLocation(program, "P");
 
@@ -425,7 +438,7 @@ void initGL(void) {
   glPointSize(1.0);
   glClearColor(0.0, 0.0, 0.0, 0.0);
 
-  glEnable(GL_CULL_FACE);
+  //glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
 }
 

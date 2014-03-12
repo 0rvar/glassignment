@@ -82,7 +82,7 @@ void camera::RotateX(float alpha) {
 void camera::SetAngles(float horizontal_angle, float vertical_angle) {
   vec3 pref = cached_p0 + vec3(0, 0, -1);
   MoveTo(cached_p0, pref, cached_up);
-  mat4 rotate = mat4::Identity().RotateY(-horizontal_angle).RotateX(vertical_angle);
+  mat4 rotate = mat4::Identity().RotateY(horizontal_angle).RotateX(vertical_angle);
   pref = view_inverse * rotate * vec3(0, 0, -1);
   MoveTo(cached_p0, pref, cached_up);
 }
