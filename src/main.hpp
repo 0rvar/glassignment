@@ -21,6 +21,7 @@
 #define PI 3.141592f
 #define BUFFER_SIZE 3000
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
+#define glsl(x) "#version 140\n" #x
 
 #define CAMERA_SPEED 0.03
 #define MOUSE_SENSITIVITY 0.005
@@ -54,9 +55,10 @@ ControlState state;
 
 GLuint    locPosition;
 GLuint    locNormal;
-GLuint    idTransMat;
-GLuint    idViewMat;
-GLuint    idProjMat;
+
+GLuint    idMVPMatrix;
+GLuint    idMVMatrix;
+GLuint    idNormalMatrix;
 
 vec3      p0 = vec3(0, 0, 3);
 vec3      pref = vec3(0, 0, 2);

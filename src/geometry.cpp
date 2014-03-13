@@ -171,6 +171,28 @@ mat4 mat4::Transpose() {
   return m;
 }
 
+mat4 mat4::Inverse() {
+  mat4 M = (*this);
+  mat4 I = mat4::Identity();
+  for(int K=0; K<4; ++K){
+    //one in the pivot
+    double factor = M[K*4 + K];
+    M[K] /= factor;
+    I[K] /= factor;
+    //zeroing the column
+    for(int L=0; L<4; ++L){
+      if( K==L ) continue;
+      double coefficient = M[L*4 + K];
+      for(int i = 0; i < 4; ++i) {
+        M[L*4 + i] -= coefficient * M[K*4 + i];
+        I[L*4 + i] -= coefficient * I[K*4 + i];
+      }
+    }
+ }
+
+ return I;
+}
+
 std::ostream& operator<<(std::ostream &strm, const vec3 &v) {
   strm << "vec3(" << v.x << ", " << v.y << ", " << v.z << ")";
   return strm;

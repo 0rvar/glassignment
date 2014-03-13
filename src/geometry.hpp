@@ -36,6 +36,7 @@ public:
     mat4 operator*(const mat4& other);
     vec3 operator*(const vec3& other);
     mat4 Transpose();
+    mat4 Inverse();
 
     static mat4 Identity();
     mat4 Translate(float x, float y, float z);

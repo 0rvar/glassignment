@@ -141,3 +141,54 @@ TEST_CASE( "M * v", "[mat4, vec3]" ) {
   CHECK( res.y == 39.0 );
   CHECK( res.z == 67.0 );
 }
+
+TEST_CASE( "inverse(M)", "[mat4]" ) {
+  mat4 expected;
+  mat4 M = mat4::Identity();
+  mat4 inv = M.Inverse();
+
+  // inv(I) == I
+  for(int i = 0; i < 16; ++i) {
+    CHECK( (M[i] - inv[i]) < 0.0001 );
+  }
+
+
+  M[0]  = 0.043927;
+  M[1]  = 0.117831;
+  M[2]  = 0.807404;
+  M[3]  = 0.484102;
+  M[4]  = 0.140768;
+  M[5]  = 0.375091;
+  M[6]  = 0.999290;
+  M[7]  = 0.896548;
+  M[8]  = 0.871029;
+  M[9]  = 0.805784;
+  M[10] = 0.988750;
+  M[11] = 0.329027;
+  M[12] = 0.435673;
+  M[13] = 0.140597;
+  M[14] = 0.858279;
+  M[15] = 0.904856;
+  expected[0]  = -0.36026;
+  expected[1]  = -1.78631;
+  expected[2]  =  0.57845;
+  expected[3]  =  1.75231;
+  expected[4]  = -2.31306;
+  expected[5]  =  2.87194;
+  expected[6]  =  0.55840;
+  expected[7]  = -1.81112;
+  expected[8]  =  2.95909;
+  expected[9]  = -1.32179;
+  expected[10] =  0.24590;
+  expected[11] = -0.36289;
+  expected[12] = -2.27391;
+  expected[13] =  1.66758;
+  expected[14] = -0.59852;
+  expected[15] =  0.88707;
+
+  inv = M.Inverse();
+  for(int i = 0; i < 16; i++) {
+    CHECK( inv[i] == expected[i] );
+  }
+
+}

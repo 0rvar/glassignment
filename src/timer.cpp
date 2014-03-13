@@ -18,10 +18,10 @@ void Timer::Restart(std::string t) {
 }
 
 void Timer::Report() {
-  double elapsed = double(clock() - start) / (CLOCKS_PER_SEC / 1000.0);
-  std::cout << title \
-            << " completed in " \
-            << elapsed \
-            << "ms" \
+  double elapsed = double(clock() - start) / double(CLOCKS_PER_SEC / 1000.0);
+  std::cout << title
+            << " completed in "
+            << elapsed
+            << "ms"
             << std::endl;
 }

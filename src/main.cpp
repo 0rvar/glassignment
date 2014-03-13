@@ -10,77 +10,100 @@
  * 88     `8b  88          88     `8888 88      .a8P  88          88     `8b   
  * 88      `8b 88888888888 88      `888 88888888Y"'   88888888888 88      `8b 
  */
-#define glsl(x) "#version 140\n" #x
 const char* const vertex_shader = glsl(
   in vec3 vert;
   in vec3 vertNormal;
 
-  uniform mat4 P;
-  uniform mat4 V;
-  uniform mat4 model;
+  uniform mat4 uMVPMatrix;
+  uniform mat4 uMVMatrix;
+  uniform mat4 uNormalMatrix;
 
-  out vec3 fragVert;
-  out vec3 fragNormal;
+  out vec4 vertColor;
+
+  vec3 light0_position = vec3(5, 5, 5);
+  vec4 light0_specular = vec4(1f, 1f, 1f, 1);
+  vec4 light0_diffuse  = vec4(221f/225f, 215f/255f, 152f/255f, 1);
+  vec4 light0_ambient  = vec4(0.1f, 0.1f, 0.1f, 1);
+  vec4 light0_emission = vec4(0.05f, 0.05f, 0.05f, 1);
+
+  float uShininess     = 1;
+
+  vec4 phong() {
+    //  P is the vertex coordinate on body
+    vec3 P = vec3(uMVMatrix * vec4(vert, 1));
+
+    //  N is the object normal at P
+    mat4 normalMatrix = transpose(inverse(uMVMatrix));
+    vec3 N = normalize(vec3(normalMatrix * vec4(vertNormal, 0.0)));
+
+    //  Light Position for light 0
+    vec3 LightPos = light0_position;
+
+    //  L is the light vector
+    vec3 L = normalize(-LightPos - P);
+
+    //  R is the reflected light vector R = 2(L.N)N - L
+    vec3 R = reflect(-L, N);
+
+    //  V is the view vector (eye at the origin)
+    vec3 V = normalize(-P);
+
+    //  Diffuse light intensity is cosine of light and normal vectors
+    float Id = max(dot(L,N) , 0.0);
+
+    //  Shininess intensity is cosine of light and reflection vectors to a power
+    float Is = (Id>0.0) ? pow(max(dot(R,V) , 0.0) , uShininess) : 0.0;
+
+    //  Vertex color
+    return light0_emission + light0_ambient + Id*light0_diffuse + Is*light0_specular;
+  }
 
   void main() {
-    gl_Position =  P*V* model * vec4(vert, 1.0);
-    fragVert = vert;
-    fragNormal = vertNormal;
+    gl_Position =  uMVPMatrix * vec4(vert, 1.0);
+    // vertColor = phong();// * 0.5*(gl_Position/gl_Position.w + 1.0);
+    //vertColor = model * vec4(vertNormal, 1);
+    vertColor = phong();
   }
 );
 const char* const fragment_shader = glsl(
-  in vec3 fragVert;
-  in vec3 fragNormal;
-
-  uniform mat4 model;
-
+  in vec4 vertColor;
   out vec4 finalColor;
-
   void main() {
-    vec3 light0_position = vec3(0, 2, 2);
-    vec4 light0_ambient  = vec4(0.1f, 0.1f, 0.1f, 1);
-    vec4 light0_specular = vec4(1f, 1f, 1f, 1);
-    vec4 light0_diffuse  = vec4(0.5f, 0.5f, 0.5f, 1);
-
-    mat3 normalMatrix = transpose(inverse(mat3(model)));
-    vec3 normal = normalize(normalMatrix * fragNormal);
-
-    //calculate the location of this fragment (pixel) in world coordinates
-    vec3 fragPosition = vec3(model * vec4(fragVert, 1));
-    
-    //calculate the vector from this pixels surface to the light source
-    vec3 surfaceToLight = light0_position - fragPosition;
-
-    //calculate the cosine of the angle of incidence (brightness)
-    float specular_intensity = dot(normal, surfaceToLight) / (length(surfaceToLight) * length(normal));
-    specular_intensity = clamp(specular_intensity, 0, 1);
-
-    //calculate final color of the pixel, based on:
-    // 1. The angle of incidence: specular
-    // 2. The color/intensities of the light: light.intensities
-    // 3. The texture and texture coord: texture(tex, fragTexCoord)
-    finalColor = specular_intensity * light0_specular;
-    //finalColor = vec4(1.0f, 1.0f, 1.0f, 1);
-    //finalColor = vec4(normal, 1);
+    finalColor = vertColor;
   }
 );
 
 void renderScene() {
-  glUniformMatrix4fv(idTransMat, 1, GL_TRUE,
+  mat4 mvp    = projection * (*cam.GetView()) * transform;
+  mat4 normal = transform.Inverse().Transpose();
+
+  glUniformMatrix4fv(idMVPMatrix, 1, GL_TRUE,
+            (const float*)&mvp);
+  glUniformMatrix4fv(idMVMatrix, 1, GL_TRUE,
             (const float*)&transform);
-  glUniformMatrix4fv(idViewMat, 1, GL_TRUE,
-            (const float*)cam.GetView());
-  glUniformMatrix4fv(idProjMat, 1, GL_TRUE,
-            (const float*)&projection);
+  glUniformMatrix4fv(idNormalMatrix, 1, GL_TRUE,
+            (const float*)&normal);
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  
   glDrawElements(GL_TRIANGLES, state.render.num_indices, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
   glutSwapBuffers();
 }
 
+/*
+ * 88           ,ad8888ba,         db         88888888ba,
+ * 88          d8"'    `"8b       d88b        88      `"8b
+ * 88         d8'        `8b     d8'`8b       88        `8b
+ * 88         88          88    d8'  `8b      88         88
+ * 88         88          88   d8YaaaaY8b     88         88
+ * 88         Y8,        ,8P  d8""""""""8b    88         8P
+ * 88          Y8a.    .a8P  d8'        `8b   88      .a8P
+ * 88888888888  `"Y8888Y"'  d8'          `8b  88888888Y"'
+ */
 void loadModel(model::data m) {
   state.render.num_indices = m.indices.size();
   uint num_v = m.vertices.size();
+
+  // Build buffers
   vec3 vert_buf[m.vertices.size()];
   for(uint i = 0; i < m.vertices.size(); i++) {
     vert_buf[i] = m.vertices[i];
@@ -94,16 +117,17 @@ void loadModel(model::data m) {
     ind_buf[i] = m.indices[i];
   }
 
-  /* Load it to the buffer data array */
-  // glBufferData(GL_ARRAY_BUFFER, sizeof(buf), buf, GL_STATIC_DRAW );
+  // Load vertices
+  glBufferSubData(GL_ARRAY_BUFFER, 0, num_v*sizeof(vec3), vert_buf);
 
-  glBufferSubData( GL_ARRAY_BUFFER, 0, num_v*sizeof(vec3), vert_buf );
-  glBufferSubData( GL_ARRAY_BUFFER, num_v*sizeof(vec3), num_v*sizeof(vec3), norm_buf );
+  // Load vertex normals
+  glBufferSubData(GL_ARRAY_BUFFER, num_v*sizeof(vec3), num_v*sizeof(vec3), norm_buf);
 
-  /* Load indices to index array */
+  // Load vertex indices (representing triangular polygons)
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, state.render.num_indices*sizeof(uint),
                  ind_buf, GL_STATIC_DRAW);    
 
+  // Update attrib pointers so opengl knows where vertices end and normals begin
   glVertexAttribPointer(locPosition, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)BUFFER_OFFSET(0));
   glVertexAttribPointer(locNormal,   3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)BUFFER_OFFSET(num_v*sizeof(vec3)));
 }
@@ -150,9 +174,11 @@ void idle() {
     return;
   }
 
-  state.mouse.vertical_rotation = std::max(float(-PI/2.0), std::min(float(PI/2.0), state.mouse.vertical_rotation));
-  cam.SetAngles(state.mouse.horizontal_rotation, state.mouse.vertical_rotation);
-  
+  cam.RotateX(state.mouse.vertical_rotation);
+  cam.RotateY(state.mouse.horizontal_rotation);
+  state.mouse.vertical_rotation = state.mouse.horizontal_rotation = 0;
+  std::cout << cam;
+
   transform = mat4::Identity()
     .RotateX(state.transform.ax)
     .RotateY(state.transform.ay)
@@ -429,9 +455,9 @@ void initGL(void) {
   // glVertexAttribPointer(normal, 3, GL_FLOAT, GL_FALSE, 3, (GLvoid*)BUFFER_OFFSET(3));
 
 
-  idTransMat = glGetUniformLocation(program, "model");
-  idViewMat  = glGetUniformLocation(program, "V");
-  idProjMat  = glGetUniformLocation(program, "P");
+  idMVPMatrix     = glGetUniformLocation(program, "uMVPMatrix");
+  idMVMatrix      = glGetUniformLocation(program, "uMVMatrix");
+  idNormalMatrix  = glGetUniformLocation(program, "uNormalMatrix");
 
   /* Set graphics attributes */
   glLineWidth(1.0);

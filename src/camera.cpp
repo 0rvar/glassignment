@@ -98,5 +98,4 @@ void camera::stream(std::ostream &strm) {
         << "\tp0:   " << cached_p0   << std::endl
         << "\tpref: " << cached_pref << std::endl
         << "\tup:   " << cached_up   << std::endl;
-  strm << "view_" << view;
 }
