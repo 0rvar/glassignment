@@ -2,6 +2,14 @@
 
 #include "geometry.hpp"
 
+vec3 vec3::operator-() {
+  vec3 r, a = (*this);
+  r.x =  -a.x;
+  r.y =  -a.y;
+  r.z =  -a.z;
+  return r;
+}
+
 vec3 vec3::operator-(const vec3& b) {
   vec3 r, a = (*this);
   r.x =  a.x - b.x;

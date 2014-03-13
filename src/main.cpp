@@ -1,5 +1,35 @@
 #include "main.hpp"
 
+#define PI 3.141592f
+#define BUFFER_SIZE 3000
+#define BUFFER_OFFSET(i) ((char *)NULL + (i))
+#define glsl(x) "#version 140\n" #x
+
+#define CAMERA_SPEED 0.03
+#define MOUSE_SENSITIVITY 0.005
+
+/* OpenGL indices */
+GLuint    locPosition;
+GLuint    locNormal;
+GLuint    idMVPMatrix;
+GLuint    idMVMatrix;
+GLuint    idNormalMatrix;
+
+GLuint    idLightPosition;
+GLuint    idLightIntensity;
+GLuint    idAmbientIntensity;
+GLuint    idMaterialAmbient;
+GLuint    idMaterialDiffuse;
+GLuint    idMaterialSpecular;
+GLuint    idLightingPhong;
+
+/* MVP */
+camera    cam = camera(vec3(2, 2, 2), vec3(0, 0, 0), vec3(0, 1, 0));
+mat4      transform = mat4::Identity();
+mat4      projection = mat4::Identity();
+
+State state;
+
 /*
  * 88888888ba  88888888888 888b      88 88888888ba,   88888888888 88888888ba   
  * 88      "8b 88          8888b     88 88      `"8b  88          88      "8b  
@@ -18,15 +48,15 @@ const char* const vertex_shader = glsl(
   uniform mat4 uMVMatrix;
   uniform mat4 uNormalMatrix;
 
+  uniform vec3 light_position;
+  uniform vec4 light_intensity;
+  uniform vec4 ambient_intensity;
+  uniform vec4 material_specular;
+  uniform vec4 material_diffuse;
+  uniform vec4 material_ambient;
+  uniform uint lighting_phong;
+
   out vec4 vertColor;
-
-  vec3 light0_position = vec3(5, 5, 5);
-  vec4 light0_specular = vec4(1f, 1f, 1f, 1);
-  vec4 light0_diffuse  = vec4(221f/225f, 215f/255f, 152f/255f, 1);
-  vec4 light0_ambient  = vec4(0.1f, 0.1f, 0.1f, 1);
-  vec4 light0_emission = vec4(0.05f, 0.05f, 0.05f, 1);
-
-  float uShininess     = 1;
 
   vec4 phong() {
     //  P is the vertex coordinate on body
@@ -37,10 +67,10 @@ const char* const vertex_shader = glsl(
     vec3 N = normalize(vec3(normalMatrix * vec4(vertNormal, 0.0)));
 
     //  Light Position for light 0
-    vec3 LightPos = light0_position;
+    vec3 LightPos = light_position;
 
     //  L is the light vector
-    vec3 L = normalize(-LightPos - P);
+    vec3 L = normalize(LightPos - P);
 
     //  R is the reflected light vector R = 2(L.N)N - L
     vec3 R = reflect(-L, N);
@@ -52,10 +82,12 @@ const char* const vertex_shader = glsl(
     float Id = max(dot(L,N) , 0.0);
 
     //  Shininess intensity is cosine of light and reflection vectors to a power
-    float Is = (Id>0.0) ? pow(max(dot(R,V) , 0.0) , uShininess) : 0.0;
+    float Is = (Id>0.0) ? pow(max(dot(R,V) , 0.0), lighting_phong) : 0.0;
 
     //  Vertex color
-    return light0_emission + light0_ambient + Id*light0_diffuse + Is*light0_specular;
+    return ambient_intensity*material_ambient 
+        + light_intensity*Id*material_diffuse 
+        + light_intensity*Is*material_specular;
   }
 
   void main() {
@@ -75,6 +107,8 @@ const char* const fragment_shader = glsl(
 
 void renderScene() {
   mat4 mvp    = projection * (*cam.GetView()) * transform;
+
+  // Not used at the moment, since our mat4::Inverse() doesn't pass tests
   mat4 normal = transform.Inverse().Transpose();
 
   glUniformMatrix4fv(idMVPMatrix, 1, GL_TRUE,
@@ -83,6 +117,22 @@ void renderScene() {
             (const float*)&transform);
   glUniformMatrix4fv(idNormalMatrix, 1, GL_TRUE,
             (const float*)&normal);
+
+  // Load lighting data
+  glUniform3fv(idLightPosition, 1, 
+            (const float*)&state.lighting.light_position);
+  glUniform4fv(idLightIntensity, 1, 
+            (const float*)&state.lighting.light_intensity);
+  glUniform4fv(idAmbientIntensity, 1, 
+            (const float*)&state.lighting.ambient_intensity);
+  glUniform4fv(idMaterialAmbient, 1, 
+            (const float*)&state.lighting.material_ambient);
+  glUniform4fv(idMaterialDiffuse, 1, 
+            (const float*)&state.lighting.material_diffuse);
+  glUniform4fv(idMaterialSpecular, 1, 
+            (const float*)&state.lighting.material_specular);
+  glUniform1ui(idLightingPhong, state.lighting.phong);
+
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  
   glDrawElements(GL_TRIANGLES, state.render.num_indices, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
@@ -99,7 +149,8 @@ void renderScene() {
  * 88          Y8a.    .a8P  d8'        `8b   88      .a8P
  * 88888888888  `"Y8888Y"'  d8'          `8b  88888888Y"'
  */
-void loadModel(model::data m) {
+void loadModelIntoGL() {
+  model::data m = state.render.model;
   state.render.num_indices = m.indices.size();
   uint num_v = m.vertices.size();
 
@@ -110,7 +161,11 @@ void loadModel(model::data m) {
   }
   vec3 norm_buf[m.normals.size()];
   for(uint i = 0; i < m.normals.size(); i++) {
-    norm_buf[i] = m.normals[i];
+    if(state.render.flip_normals) {
+      norm_buf[i] = -m.normals[i];
+    } else {
+      norm_buf[i] = m.normals[i];
+    }
   }
   uint ind_buf[m.indices.size()];
   for(uint i = 0; i < m.indices.size(); i++) {
@@ -144,7 +199,7 @@ void loadModel(model::data m) {
  * 88  88888888Y"'    88888888888  88888888888  
  */
 void idle() {
-  //guiMainIteration();
+  guiMainIteration();
 
   if(state.heldkeys.a) {
     cam.Strafe(-CAMERA_SPEED);
@@ -169,15 +224,32 @@ void idle() {
     cam.Elevate(CAMERA_SPEED);
     state.shouldUpdate = true;
   }
+
+  if(state.newModelFilename != NULL) {
+    std::cout << "New model!\n";
+    loadModelFile(state.newModelFilename);
+    state.newModelFilename = NULL;
+    state.shouldReload = true;
+    // reset(); // TODO
+  }
   
+  if(state.shouldReload) {
+    state.shouldReload = false;
+    std::cout << "Reloading model\n";
+    loadModelIntoGL();
+    state.shouldUpdate = true;
+  }
+
   if(!state.shouldUpdate) {
     return;
   }
 
-  cam.RotateX(state.mouse.vertical_rotation);
-  cam.RotateY(state.mouse.horizontal_rotation);
-  state.mouse.vertical_rotation = state.mouse.horizontal_rotation = 0;
-  std::cout << cam;
+  if(state.mouse.vertical_rotation != 0 || state.mouse.horizontal_rotation != 0) {
+    cam.RotateX(state.mouse.vertical_rotation);
+    cam.RotateY(state.mouse.horizontal_rotation);
+    state.mouse.vertical_rotation = state.mouse.horizontal_rotation = 0;
+    std::cout << cam;
+  }
 
   transform = mat4::Identity()
     .RotateX(state.transform.ax)
@@ -339,6 +411,28 @@ void onSpecialDown(int key, int x, int y) {
  * Y8a.    .a8P       88       88  88           
  *  `"Y8888Y"'        88       88  88888888888  
  */
+void reset() {
+  transform = mat4::Identity();
+
+  gui_set_light_pos( vec3(5.0, 5.0, 5.0));
+  gui_set_I_light(   vec4(1.0, 1.0, 1.0));
+  gui_set_I_ambient( vec4(1.0, 1.0, 1.0));
+  gui_set_k_specular(vec4(1.0, 1.0, 1.0));
+  gui_set_k_diffuse( vec4(221.0/255.0, 215.0/255.0, 152.0/255.0));
+  gui_set_k_ambient( vec4(0.1, 0.1, 0.1));
+
+  gui_set_phong(1);
+  gui_set_move_mode(0);
+}
+
+void loadModelFile(char* filename) {
+  try {
+    state.render.model = model::read(filename);
+    loadModelIntoGL();
+  } catch(model::ParseException &e) {
+    std::cerr << "Invalid OFF-file: \"" << e.what() << "\" on line " << e.line << std::endl;
+  }
+}
 
 void setOrthographic() {
   float left,right,top,bottom,far,near;
@@ -389,10 +483,6 @@ void setPerspective(const float &far, const float &near, const float &fov) {
  * Y8a     a8P 88               88      Y8a.    .a8P 88           
  *  "Y88888P"  88888888888      88       `"Y8888Y"'  88   
  */ 
-void updateLights() {
-  
-}
-
 void initGlut(int argc, char **argv) {
   /* Initialize glut */
   glutInit(&argc, argv);
@@ -454,10 +544,17 @@ void initGL(void) {
   // glEnableVertexAttribArray(normal);
   // glVertexAttribPointer(normal, 3, GL_FLOAT, GL_FALSE, 3, (GLvoid*)BUFFER_OFFSET(3));
 
+  idMVPMatrix        = glGetUniformLocation(program, "uMVPMatrix");
+  idMVMatrix         = glGetUniformLocation(program, "uMVMatrix");
+  idNormalMatrix     = glGetUniformLocation(program, "uNormalMatrix");
+  idLightPosition    = glGetUniformLocation(program, "light_position");
+  idLightIntensity   = glGetUniformLocation(program, "light_intensity");
+  idAmbientIntensity = glGetUniformLocation(program, "ambient_intensity");
+  idMaterialAmbient  = glGetUniformLocation(program, "material_ambient");
+  idMaterialDiffuse  = glGetUniformLocation(program, "material_diffuse");
+  idMaterialSpecular = glGetUniformLocation(program, "material_specular");
+  idLightingPhong    = glGetUniformLocation(program, "lighting_phong");
 
-  idMVPMatrix     = glGetUniformLocation(program, "uMVPMatrix");
-  idMVMatrix      = glGetUniformLocation(program, "uMVMatrix");
-  idNormalMatrix  = glGetUniformLocation(program, "uNormalMatrix");
 
   /* Set graphics attributes */
   glLineWidth(1.0);
@@ -482,21 +579,23 @@ int main(int argc, char *argv[]) {
   glutMotionFunc(onMouseMove);
   glutPassiveMotionFunc(onPassiveMouseMove);
 
+
   if(argc > 1) {
-    try {
-      model::data m = model::read(argv[1]);
-      loadModel(m);
-    } catch(model::ParseException &e) {
-      std::cerr << "Invalid OFF-file: \"" << e.what() << "\" on line " << e.line << std::endl;
-    }
+    state.newModelFilename = argv[1];
   }
 
   state.window_width  = glutGet(GLUT_WINDOW_WIDTH);
   state.window_height = glutGet(GLUT_WINDOW_HEIGHT);
 
   setPerspective(100, 0.1, 70);
-  updateLights();
-  state.shouldUpdate = true;
+
+  /* Initialize GUI */
+  guiInit(&argc, argv);
+  guiInitWindow("ass3gui.glade");
+
+  reset(); // TODO
+  // gui_set_flip_normals(FALSE);
+  // gui_set_I_light(color);
 
   /* Loop for an infinitesimal while */
   glutMainLoop();
