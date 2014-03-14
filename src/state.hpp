@@ -8,7 +8,6 @@ typedef struct S {
   bool shouldUpdate, shouldReload;
   int window_width, window_height;
   char* newModelFilename;
-  bool smoothMovement;
 
   struct transform_ {
     float dx, dy, s, ax, ay, az;
@@ -22,7 +21,7 @@ typedef struct S {
   } transform;
 
   struct heldkeys_ {
-    bool w,a,s,d,q,e,shift,space;
+    bool w,a,s,d,q,e,shift,ctrl,space;
   } heldkeys;
 
   struct mouse_ {
@@ -53,6 +52,16 @@ typedef struct S {
       near(0.1),
       fov(70) {};
   } perspective;
+
+  struct smooth_movement_ {
+    bool active;
+    float speed;
+    double lastTick;
+
+    smooth_movement_():
+      active(false),
+      speed(0) {};
+  } smooth_movement;
 
   S(): 
     shouldUpdate(false), 

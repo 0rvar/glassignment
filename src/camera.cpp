@@ -87,6 +87,13 @@ void camera::SetAngles(float horizontal_angle, float vertical_angle) {
   MoveTo(cached_p0, pref, cached_up);
 }
 
+void camera::SmoothRotate(float alpha) {
+  std::cout << "Rotating alpha" << std::endl;
+}
+void camera::SmoothMove(float deltatime, float forwardspeed) {
+  std::cout << "Moving " << deltatime << "ms at " << forwardspeed << std::endl;
+}
+
 // Debugging
 std::ostream& operator<<(std::ostream &strm, const camera &cam) {
   ((camera)cam).stream(strm);

@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <gtk/gtk.h>
 #include <cmath>
+#include <ctime>
 
 #include "geometry.hpp"
 #include "model.hpp"

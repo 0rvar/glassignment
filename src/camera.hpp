@@ -27,6 +27,9 @@ public:
   void RotateZ(float alpha);
   void SetAngles(float horizontal_angle, float vertical_angle);
 
+  void SmoothRotate(float alpha);
+  void SmoothMove(float deltatime, float forwardspeed);
+
   void stream(std::ostream &strm);
 };
 std::ostream& operator<<(std::ostream &strm, const camera &cam);

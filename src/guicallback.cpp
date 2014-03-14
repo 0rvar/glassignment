@@ -16,8 +16,7 @@ extern "C" void on_flip_normals_toggled(GtkToggleButton *togglebutton, gpointer 
 
 extern "C" void on_move_mode_changed(GtkComboBox *combobox, gpointer user_data) {
   gint index = gtk_combo_box_get_active(combobox);
-  printf("Move mode chosen: %d\n", index);
-  //TODO
+  state.smooth_movement.active = (index == 1);
 }
 
 extern "C" void on_light_x_value_changed(GtkSpinButton*spinbutton,gpointer user_data) {

@@ -208,28 +208,69 @@ void loadModelIntoGL() {
 void idle() {
   guiMainIteration();
 
-  if(state.heldkeys.a) {
-    cam.Strafe(-CAMERA_SPEED);
-    state.shouldUpdate = true;
-  } else if(state.heldkeys.d) {
-    cam.Strafe(CAMERA_SPEED);
-    state.shouldUpdate = true;
-  }
+  if(state.smooth_movement.active) {
+    // Calculate deltatime
+    double now = clock();
+    double lastTick = state.smooth_movement.lastTick;
+    float deltatime_ms = float(now - lastTick) / float(CLOCKS_PER_SEC / 1000.0);
+    state.smooth_movement.lastTick = now;
+    if(deltatime_ms > 30) {
+      deltatime_ms = 0;
+    }
+    if(deltatime_ms > 0.01) {
+      cam.SmoothMove(deltatime_ms, state.smooth_movement.speed);
+      state.shouldUpdate = true;
+    }
 
-  if(state.heldkeys.w) {
-    cam.Drive(-CAMERA_SPEED);
-    state.shouldUpdate = true;
-  } else if(state.heldkeys.s) {
-    cam.Drive(CAMERA_SPEED);
-    state.shouldUpdate = true;
-  }
+    if(state.heldkeys.a) {
+      cam.SmoothRotate(-deltatime_ms);
+    } else if(state.heldkeys.d) {
+      cam.SmoothRotate(deltatime_ms);
+    }
 
-  if(state.heldkeys.q) {
-    cam.Elevate(-CAMERA_SPEED);
-    state.shouldUpdate = true;
-  } else if(state.heldkeys.e) {
-    cam.Elevate(CAMERA_SPEED);
-    state.shouldUpdate = true;
+    if(state.heldkeys.shift || state.heldkeys.w) {
+      state.smooth_movement.speed = state.smooth_movement.speed + deltatime_ms/512.0;
+    } else if(state.heldkeys.ctrl || state.heldkeys.s) {
+      state.smooth_movement.speed = std::max(0.0, state.smooth_movement.speed - deltatime_ms/512.0);
+    }
+
+    if(state.mouse.horizontal_rotation != 0) {
+      cam.SmoothRotate(state.mouse.horizontal_rotation);
+    }
+
+    state.mouse.vertical_rotation = state.mouse.horizontal_rotation = 0;
+  } else {
+    if(state.heldkeys.a) {
+      cam.Strafe(-CAMERA_SPEED);
+      state.shouldUpdate = true;
+    } else if(state.heldkeys.d) {
+      cam.Strafe(CAMERA_SPEED);
+      state.shouldUpdate = true;
+    }
+
+    if(state.heldkeys.w) {
+      cam.Drive(-CAMERA_SPEED);
+      state.shouldUpdate = true;
+    } else if(state.heldkeys.s) {
+      cam.Drive(CAMERA_SPEED);
+      state.shouldUpdate = true;
+    }
+
+    if(state.heldkeys.q) {
+      cam.Elevate(-CAMERA_SPEED);
+      state.shouldUpdate = true;
+    } else if(state.heldkeys.e) {
+      cam.Elevate(CAMERA_SPEED);
+      state.shouldUpdate = true;
+    }
+
+    if(state.mouse.vertical_rotation != 0 || state.mouse.horizontal_rotation != 0) {
+      cam.RotateX(state.mouse.vertical_rotation);
+      cam.RotateY(state.mouse.horizontal_rotation);
+      state.mouse.vertical_rotation = state.mouse.horizontal_rotation = 0;
+      state.shouldUpdate = true;
+      std::cout << cam;
+    }
   }
 
   if(state.newModelFilename != NULL) {
@@ -249,13 +290,6 @@ void idle() {
 
   if(!state.shouldUpdate) {
     return;
-  }
-
-  if(state.mouse.vertical_rotation != 0 || state.mouse.horizontal_rotation != 0) {
-    cam.RotateX(state.mouse.vertical_rotation);
-    cam.RotateY(state.mouse.horizontal_rotation);
-    state.mouse.vertical_rotation = state.mouse.horizontal_rotation = 0;
-    std::cout << cam;
   }
 
   transform = mat4::Identity()
@@ -306,7 +340,6 @@ void onMouseMove(int x, int y) {
   state.mouse.last_x = state.window_width/2;
   state.mouse.last_y = state.window_height/2;
 
-  state.shouldUpdate = true;
   glutSetCursor(GLUT_CURSOR_NONE);
 }
 
