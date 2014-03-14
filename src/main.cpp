@@ -185,6 +185,13 @@ void loadModelIntoGL() {
   // Update attrib pointers so opengl knows where vertices end and normals begin
   glVertexAttribPointer(locPosition, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)BUFFER_OFFSET(0));
   glVertexAttribPointer(locNormal,   3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)BUFFER_OFFSET(num_v*sizeof(vec3)));
+
+  // Switch polygon winding order for backface culling
+  if(state.render.flip_normals) {
+    glFrontFace(GL_CW);
+  } else {
+    glFrontFace(GL_CCW);
+  }
 }
 
 
@@ -230,7 +237,7 @@ void idle() {
     loadModelFile(state.newModelFilename);
     state.newModelFilename = NULL;
     state.shouldReload = true;
-    // reset(); // TODO
+    reset(); 
   }
   
   if(state.shouldReload) {
@@ -273,6 +280,18 @@ void idle() {
  *  Y8a.    .a8P  88      a8P  Y8a     a8P  
  *   `"Y8888Y"'   88888888P"    "Y88888P"   
  */
+void onMouse(int button, int st, int x, int y) {
+  if ((button == 3) || (button == 4)) {
+    if (st == GLUT_UP) return; // Disregard redundant GLUT_UP events
+    int dir = (button == 3) ? -1: 1;
+    state.perspective.fov += float(dir);
+    setPerspective();
+    state.shouldUpdate = true;
+
+    std::cout << "Field of view: " << int(state.perspective.fov) << std::endl;
+  }
+}
+
 void onPassiveMouseMove(int x, int y) {
   state.mouse.last_x = x;
   state.mouse.last_y = y;
@@ -458,6 +477,14 @@ void setOblique() {
   projection = projection * H;
 }
 
+void setPerspective() {
+  setPerspective(
+    state.perspective.far, 
+    state.perspective.near, 
+    state.perspective.fov
+  );
+}
+
 void setPerspective(const float &far, const float &near, const float &fov) {
   mat4 P;
 
@@ -559,9 +586,12 @@ void initGL(void) {
   /* Set graphics attributes */
   glLineWidth(1.0);
   glPointSize(1.0);
-  glClearColor(0.0, 0.0, 0.0, 0.0);
+  glClearColor(10/255.0, 23/255.0, 31/255.0, 1.0);
 
-  //glEnable(GL_CULL_FACE);
+  // Backface culling
+  glEnable(GL_CULL_FACE);
+  glFrontFace(GL_CCW);
+
   glEnable(GL_DEPTH_TEST);
 }
 
@@ -578,6 +608,7 @@ int main(int argc, char *argv[]) {
   glutReshapeFunc(reshape); 
   glutMotionFunc(onMouseMove);
   glutPassiveMotionFunc(onPassiveMouseMove);
+  glutMouseFunc(onMouse);
 
 
   if(argc > 1) {
@@ -587,15 +618,13 @@ int main(int argc, char *argv[]) {
   state.window_width  = glutGet(GLUT_WINDOW_WIDTH);
   state.window_height = glutGet(GLUT_WINDOW_HEIGHT);
 
-  setPerspective(100, 0.1, 70);
+  setPerspective();
 
   /* Initialize GUI */
   guiInit(&argc, argv);
   guiInitWindow("ass3gui.glade");
-
-  reset(); // TODO
-  // gui_set_flip_normals(FALSE);
-  // gui_set_I_light(color);
+  reset();
+  gui_set_flip_normals(FALSE);
 
   /* Loop for an infinitesimal while */
   glutMainLoop();

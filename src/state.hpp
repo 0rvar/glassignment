@@ -8,6 +8,7 @@ typedef struct S {
   bool shouldUpdate, shouldReload;
   int window_width, window_height;
   char* newModelFilename;
+  bool smoothMovement;
 
   struct transform_ {
     float dx, dy, s, ax, ay, az;
@@ -44,6 +45,14 @@ typedef struct S {
     vec4 material_specular;
     uint phong;
   } lighting;
+
+  struct perspective_ {
+    float far, near, fov;
+    perspective_(): 
+      far(100),
+      near(0.1),
+      fov(70) {};
+  } perspective;
 
   S(): 
     shouldUpdate(false), 

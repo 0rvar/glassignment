@@ -111,7 +111,6 @@ extern "C" gboolean on_I_ambient_b_value_changing(GtkRange *range, gpointer user
 }
 
 extern "C" void on_I_ambient_value_changed(GdkColor color) {
-  printf("ambient light set Irgb=(%i,%i,%i)\n",color.red,color.green,color.blue);
   state.lighting.ambient_intensity = vec4(
     color.red   / 65536.0, 
     color.blue  / 65536.0,
@@ -195,7 +194,6 @@ extern "C" void on_k_specular_b_value_changed(GtkRange *range, gpointer user_dat
 
 extern "C" void on_phong_value_changed(GtkSpinButton *spinbutton, gpointer user_data) {
   gint32 value = (gint32)round(gtk_spin_button_get_value(spinbutton));
-  printf("Phong changed!\n");
   state.lighting.phong = int(value);
   state.shouldUpdate = true;
 }
