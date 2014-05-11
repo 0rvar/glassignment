@@ -15,12 +15,18 @@ The program requires Glut and Glew to compile, and is configured to be compiled 
 
 Compile with:
 
-```make```
+```
+make
+```
 
 ## Running
-```./main [off-file]```
+
+```
+./main [off-file]
+```
 
 ## Testing
+
 Unit tests can be compiled and executed with make, and have no extra dependencies:
 
 ```
